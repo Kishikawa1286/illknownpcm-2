@@ -1,0 +1,63 @@
+```julia
+using IntervalArithmetic
+using IntervalArithmetic.Symbols
+using Weave
+
+include_weave("../../nearly_equal/v1/nearly_equal.jmd")
+```
+
+# 区間 PCM
+
+## 区間 PCM の定義
+
+$$
+A = \left( A_{ij} \right)_{n \times n} = \left( \left[ a_{ij}^\mathrm{L}, a_{ij}^\mathrm{U} \right] \right)_{n \times n}
+$$
+
+- $n \times n$ 行列
+- $a_{ij}^\mathrm{L} > 0, ~~ i, j \in N$
+- $a_{ii}^\mathrm{L} = a_{ii}^\mathrm{U} = 1, ~~ i \in N$
+- $a_{ij}^\mathrm{L} = 1/a_{ji}^\mathrm{U}, ~~ i, j \in N, ~ i \neq j$
+
+```julia
+@inline function isIntervalPCM(
+    A::Matrix{Interval{T}};
+    allow_uncommon::Bool = false
+)::Bool where {T <: Real}
+    m, n = size(A)
+    # Check if the matrix is square
+    if m != n return false end
+
+    for i = 1:n
+        for j in (i+1):n
+            if !iscommon(A[i,j])
+                # non-common interval means like: ∅, (-∞, 1]
+                if allow_uncommon
+                    continue
+                else
+                    return false
+                end
+            end
+            
+            aᵢⱼᴸ = inf(A[i,j]); aᵢⱼᵁ = sup(A[i,j])
+            aⱼᵢᴸ = inf(A[j,i]); aⱼᵢᵁ = sup(A[j,i])
+
+            # Check if the lower bound is positive
+            if aᵢⱼᴸ ≤ 0 || aⱼᵢᴸ ≤ 0 return false end
+
+            # Check reciprocity
+            if !(aᵢⱼᴸ ≈ 1 / aⱼᵢᵁ) return false end
+            if !(aᵢⱼᵁ ≈ 1 / aⱼᵢᴸ) return false end
+        end
+    end
+
+    # Check if the diagonal elements are [1, 1]
+    for i in 1:n
+        aᵢⱼᴸ = inf(A[i,i]); aᵢⱼᵁ = sup(A[i,i])
+        if aᵢⱼᴸ != 1 return false end
+        if aᵢⱼᵁ != 1 return false end
+    end
+
+    return true 
+end
+```

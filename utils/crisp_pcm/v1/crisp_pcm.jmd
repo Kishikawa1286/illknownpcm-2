@@ -1,0 +1,135 @@
+```julia
+using LinearAlgebra
+using Weave
+
+include_weave("../../nearly_equal/v1/nearly_equal.jmd")
+```
+
+# Crisp PCM
+
+## Crisp PCM の定義
+
+$$
+A = \left( a_{ij} \right)_{n \times n}
+$$
+
+- $n \times n$ 行列
+- $a_{ij} > 0, ~~ i, j \in N$
+- $a_{ii} = 1, ~~ i \in N$
+- $a_{ij} = 1/a_{ji}, ~~ i, j \in N$
+
+```julia
+@inline function isCrispPCM(A::Matrix{T})::Bool where {T <: Real}
+    m, n = size(A)
+    # Check if the matrix is square
+    if m != n return false end
+
+    for i in 1:n
+        for j in (i+1):n
+            aᵢⱼ = A[i, j]; aⱼᵢ = A[j, i]
+            # Check if the elements are positive
+            if aᵢⱼ ≤ 0 || aⱼᵢ ≤ 0 return false end
+            # Check reciprocity
+            if !(aᵢⱼ ≈ 1/aⱼᵢ) return false end
+        end
+    end
+
+    # Check if the diagonal elements are 1
+    for i in 1:n
+        aᵢᵢ = A[i, i]
+        if aᵢᵢ != 1 return false end
+    end
+
+    return true
+end
+```
+
+## 整合性指標
+
+### CI (Consistency Index)
+
+$$
+\operatorname{CI}(A) = \frac{\lambda_{\max} - n}{n - 1}
+$$
+
+ただし, $n = \operatorname{dim}(A)$ で, $\lambda_{\max}$ は $A$ の最大固有値.
+
+```julia
+@inline function CI(A::Matrix{T})::Real where {T <: Real}
+    if (!isCrispPCM(A))
+        throw(ArgumentError("A must be crisp PCM"))
+    end
+
+    n = size(A, 2)
+    λₘₐₓ = maximum(real.(filter(λ  -> isreal(λ), eigvals(A))))
+    return (λₘₐₓ - n) / (n - 1)
+end
+```
+
+
+
+### CR (Consistency Ratio)
+
+$$
+\operatorname{CR}(A) = \frac{\operatorname{CI}(A)}{\operatorname{RI}(n)}
+$$
+
+ただし, $n = \operatorname{dim}(A)$.
+
+```julia
+@inline function CR(A::Matrix{T})::Real where {T <: Real}
+    if (!isCrispPCM(A))
+        throw(ArgumentError("A must be crisp PCM"))
+    end
+
+    n = size(A, 2)
+    return CI(A) / RI(n)
+end
+```
+
+#### RI (Random Index)
+
+$$
+\operatorname{RI}(n) = \begin{cases}
+0.58 & \text{if } n = 3 \\
+0.9 & \text{if } n = 4 \\
+1.12 & \text{if } n = 5 \\
+1.24 & \text{if } n = 6 \\
+1.32 & \text{if } n = 7 \\
+1.41 & \text{if } n = 8 \\
+1.45 & \text{if } n = 9 \\
+1.49 & \text{if } n \geq 10 \\
+\end{cases}
+$$
+
+```julia
+@inline function RI(n::Integer)::Real
+    if n < 3
+        throw(ArgumentError("n must be greater than or equal to 3"))
+    end
+    if n == 3
+        return 0.58
+    end
+    if n == 4
+        return 0.9
+    end
+    if n == 5
+        return 1.12
+    end
+    if n == 6
+        return 1.24
+    end
+    if n == 7
+        return 1.32
+    end
+    if n == 8
+        return 1.41
+    end
+    if n == 9
+        return 1.45
+    end
+    if n >= 10
+        return 1.49
+    end
+end
+```

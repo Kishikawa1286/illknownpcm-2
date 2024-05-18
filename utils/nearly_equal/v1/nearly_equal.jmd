@@ -1,0 +1,36 @@
+# ≈ の定義
+
+$$
+a \approx b ~~ \Longleftrightarrow ~~ |a - b| < t
+$$
+
+ただし, $t \geq 0$ は許容誤差である.
+
+```julia
+"""
+    isNearlyEqual(a, b; tolerance=1e-6)
+
+    Check if the difference between `a` and `b` is less than `tolerance`. The default `tolerance` is `1e-6`.
+"""
+@inline function isNearlyEqual(
+    a::T,
+    b::T;
+    tolerance=1e-6
+)::Bool where {T <: Real}
+    if tolerance < 0
+        throw(ArgumentError("tolerance must be non-negative"))
+    end
+    return abs(a - b) < tolerance
+end
+```
+
+```julia
+"""
+    ≈
+
+    Unicode alias of [`isNearlyEqual`](https://google). The default tolerance is `1e-6`.  
+"""
+function ≈(a, b; tolerance=1e-6)
+    return isNearlyEqual(a, b; tolerance=tolerance)
+end
+```
