@@ -1,0 +1,21 @@
+{
+	"name": "Ubuntu",
+	"image": "jupyter/datascience-notebook:julia-1.9.3",
+	"features": {
+		"ghcr.io/devcontainers/features/common-utils:2": {}
+	},
+	"postCreateCommand": "julia ./.devcontainer/init.jl",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-toolsai.jupyter",
+				"julialang.language-julia",
+                "0h7z.vscode-julia-format"
+			],
+			"settings": {
+				"terminal.integrated.shell": "/bin/bash",
+				"jupyter.experiments.optOutFrom": ["NativeNotebookEditor"]
+			}
+		}
+	}
+}
