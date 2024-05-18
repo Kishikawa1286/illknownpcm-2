@@ -1,11 +1,12 @@
+# CrispPCM
+
 ```julia
 using LinearAlgebra
-using Weave
 
-include_weave("../../nearly_equal/v1/nearly_equal.jmd")
+include("../../nearly_equal/v1/nearly_equal.jl")
+
+using .NearlyEqual
 ```
-
-# Crisp PCM
 
 ## Crisp PCM の定義
 
@@ -19,6 +20,11 @@ $$
 - $a_{ij} = 1/a_{ji}, ~~ i, j \in N$
 
 ```julia
+"""
+    isCrispPCM(A)
+
+Check if the matrix `A` is a crisp PCM.
+"""
 @inline function isCrispPCM(A::Matrix{T})::Bool where {T <: Real}
     m, n = size(A)
     # Check if the matrix is square
@@ -30,7 +36,7 @@ $$
             # Check if the elements are positive
             if aᵢⱼ ≤ 0 || aⱼᵢ ≤ 0 return false end
             # Check reciprocity
-            if !(aᵢⱼ ≈ 1/aⱼᵢ) return false end
+            if !isNearlyEqual(aᵢⱼ, 1/aⱼᵢ) return false end
         end
     end
 
@@ -55,6 +61,12 @@ $$
 ただし, $n = \operatorname{dim}(A)$ で, $\lambda_{\max}$ は $A$ の最大固有値.
 
 ```julia
+"""
+    CI(A)
+
+Calculate the Consistency Index of the crisp PCM `A`.
+Throws an `ArgumentError` if `A` is not a crisp PCM.
+"""
 @inline function CI(A::Matrix{T})::Real where {T <: Real}
     if (!isCrispPCM(A))
         throw(ArgumentError("A must be crisp PCM"))
@@ -66,8 +78,6 @@ $$
 end
 ```
 
-
-
 ### CR (Consistency Ratio)
 
 $$
@@ -77,6 +87,12 @@ $$
 ただし, $n = \operatorname{dim}(A)$.
 
 ```julia
+"""
+    CR(A)
+
+Calculate the Consistency Ratio of the crisp PCM `A`.
+Throws an `ArgumentError` if `A` is not a crisp PCM.
+"""
 @inline function CR(A::Matrix{T})::Real where {T <: Real}
     if (!isCrispPCM(A))
         throw(ArgumentError("A must be crisp PCM"))
@@ -103,6 +119,12 @@ $$
 $$
 
 ```julia
+"""
+    RI(n)
+
+Calculate the Random Index for the dimension `n` to calculate [`CR`](@ref).
+Throws an `ArgumentError` if `n` is less than 3.
+"""
 @inline function RI(n::Integer)::Real
     if n < 3
         throw(ArgumentError("n must be greater than or equal to 3"))
@@ -132,4 +154,8 @@ $$
         return 1.49
     end
 end
+```
+
+```julia
+export isCrispPCM, CI, CR, RI
 ```
