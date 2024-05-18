@@ -1,0 +1,87 @@
+# TwofoldIntervalArithmetic
+
+```julia
+using IntervalArithmetic
+using IntervalArithmetic.Symbols
+
+include("../../nearly_equal/v1/nearly_equal.jl")
+
+using .NearlyEqual
+```
+
+## 二重区間の定義
+
+$$
+\mathscr{A}
+= \left( \mathscr{A}^-, \mathscr{A}^+ \right)
+= \left( \left[
+    \alpha^{\mathrm{L}-}, \alpha^{\mathrm{U}-}
+\right],\left[
+    \alpha^{\mathrm{L}+}, \alpha^{\mathrm{U}+}
+\right] \right)
+$$
+
+- $\mathscr{A}^- \subseteq \mathscr{A}^+ ~~ (\alpha^{\mathrm{L}+} \leq \alpha^{\mathrm{L}-} \leq \alpha^{\mathrm{U}-} \leq \alpha^{\mathrm{U}+})$
+
+```julia
+const TwofoldInterval{T} = Tuple{Interval{T}, Interval{T}} where {T <: Real}
+```
+
+```julia
+"""
+    isTwofoldInterval(A;
+        allow_uncommon_inner_interval=true,
+        strict=false)
+
+Check if `A` is a twofold interval.
+"""
+@inline function isTwofoldInterval(
+        A::TwofoldInterval{T};
+        allow_uncommon_inner_interval::Bool=true,
+        strict::Bool=false
+)::Bool where {T <: Real}
+    # Check if outer interval is common
+    if !iscommon(A[2]) return false end
+
+    # Check if inner interval is common
+    if !iscommon(A[1])
+        if allow_uncommon_inner_interval
+            return true
+        else
+            return false
+        end
+    end
+
+    aᴸ⁻ = inf(A[1]); aᵁ⁻ = sup(A[1])
+    aᴸ⁺ = inf(A[2]); aᵁ⁺ = sup(A[2])
+
+    # aᴸ⁻ ≈ aᴸ⁺ is allowed (but should be corrected)
+    if aᴸ⁻ < aᴸ⁺ && (strict || !isNearlyEqual(aᴸ⁻, aᴸ⁺)) return false end
+    # aᵁ⁻ ≈ aᵁ⁺ is allowed (but should be corrected)
+    if aᵁ⁻ > aᵁ⁺ && (strict || !isNearlyEqual(aᵁ⁻, aᵁ⁺)) return false end
+
+    return true
+end
+```
+
+```julia
+"""
+    inner(A)
+
+Get inner interval of twofold interval `A`.
+"""
+@inline inner(A::TwofoldInterval{T})::Interval{T} where {T <: Real} = A[1]
+```
+
+```julia
+"""
+    outer(A)
+
+Get outer interval of twofold interval `A`.
+"""
+@inline outer(A::TwofoldInterval{T})::Interval{T} where {T <: Real} = A[2]
+```
+
+```julia
+export TwofoldInterval, isTwofoldInterval, inner, outer
+```

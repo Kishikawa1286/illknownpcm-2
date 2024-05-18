@@ -16,6 +16,7 @@ A = \left( A_{ij} \right)_{n \times n} = \left( \left[ a_{ij}^\mathrm{L}, a_{ij}
 $$
 
 - $n \times n$ 行列
+- $A_{ij} \subset \left\{ x \in \mathbb{R} ~ \mid ~ x > 0 \right\}, ~~ i, j \in N$
 - $a_{ij}^\mathrm{L} > 0, ~~ i, j \in N$
 - $a_{ii}^\mathrm{L} = a_{ii}^\mathrm{U} = 1, ~~ i \in N$
 - $a_{ij}^\mathrm{L} = 1/a_{ji}^\mathrm{U}, ~~ i, j \in N, ~ i \neq j$
