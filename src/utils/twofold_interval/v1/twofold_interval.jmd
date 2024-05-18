@@ -32,7 +32,7 @@ const TwofoldInterval = Tuple{Interval{T}, Interval{T}} where {T <: Real}
         allow_uncommon_inner_interval=true,
         strict=false)
 
-Check if `A` is a twofold interval.
+Check whether `A` is a twofold interval.
 """
 @inline function isTwofoldInterval(
         A::TwofoldInterval;

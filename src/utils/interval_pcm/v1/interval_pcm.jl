@@ -9,6 +9,9 @@ using IntervalArithmetic.Symbols
 include("../../nearly_equal/v1/nearly_equal.jl")
 using .NearlyEqual
 
+include("../../interval_weight_vector/v1/interval_weight_vector.jl")
+using .IntervalWeightVector
+
 """
     isIntervalPCM(A; allow_uncommon=false)
 
@@ -55,6 +58,39 @@ Check whether the given matrix `A` is an interval PCM.
     return true 
 end
 
-export isIntervalPCM
+"""
+    PCM(W)
+
+Generate an interval PCM from the interval weight vector `W`.
+Throws an `ArgumentError` if `W` is not an interval weight vector.
+"""
+function PCM(
+    W::Vector{Interval{T}}
+)::Matrix{Interval{T}} where {T <: Real}
+    if !isIntervalWeightVector(W)
+        throw(ArgumentError("The given vector is not an interval weight vector."))
+    end
+
+    n = length(W)
+    A = Matrix{Interval{T}}(undef, n, n)
+    
+    for i = 1:n, j = 1:n
+        if i == j
+            A[i,j] = 1.0..1.0
+            continue
+        end
+
+        Wᵢ = W[i]; Wⱼ = W[j]
+        wᵢᴸ = inf(Wᵢ); wᵢᵁ = sup(Wᵢ)
+        wⱼᴸ = inf(Wⱼ); wⱼᵁ = sup(Wⱼ)
+
+        aᵢⱼᴸ = wᵢᴸ / wⱼᵁ; aᵢⱼᵁ = wᵢᵁ / wⱼᴸ
+        A[i,j] = aᵢⱼᴸ..aᵢⱼᵁ
+    end
+
+    return A
+end
+
+export isIntervalPCM, PCM
 
 end

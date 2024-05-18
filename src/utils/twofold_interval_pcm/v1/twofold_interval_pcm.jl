@@ -12,6 +12,9 @@ using .NearlyEqual
 include("../../twofold_interval/v1/twofold_interval.jl")
 using .TwofoldIntervalArithmetic
 
+include("../../interval_pcm/v1/interval_pcm.jl")
+using .IntervalPCM
+
 """
     isTwofoldIntervalPCM(𝒜;
         allow_uncommon_inner_interval=true,
@@ -87,7 +90,7 @@ Check if the matrix `𝒜` is a twofold interval PCM.
             if !isNearlyEqual(αᵢⱼᴸ⁺, 1 / αⱼᵢᵁ⁺) return false end
             if !isNearlyEqual(αᵢⱼᵁ⁺, 1 / αⱼᵢᴸ⁺) return false end
         end
-
+    end
     return true
 end
 
@@ -151,6 +154,32 @@ function createTwofoldIntervalMatrix(
     return 𝒜
 end
 
-export isTwofoldIntervalPCM, inner, outer, createTwofoldIntervalMatrix
+"""
+    createTwofoldIntervalPCM(𝒜⁻, 𝒜⁺)
+
+Create a twofold interval PCM from the inner and outer interval matrices.
+Throw an `ArgumentError` if the given matrices `𝒜⁻` and `𝒜⁺` are not interval PCMs.
+"""
+function createTwofoldIntervalPCM(
+    𝒜⁻::Matrix{Interval{T}},
+    𝒜⁺::Matrix{Interval{T}}
+)::Matrix{TwofoldInterval{T}} where {T <: Real}
+    if !isIntervalPCM(𝒜⁻)
+        throw(ArgumentError("𝒜⁻ must be an interval PCM."))
+    end
+    if !isIntervalPCM(𝒜⁺)
+        throw(ArgumentError("𝒜⁺ must be an interval PCM."))
+    end
+
+    𝒜 = createTwofoldIntervalMatrix(𝒜⁻, 𝒜⁺)
+    if !isTwofoldIntervalPCM(𝒜)
+    # Failed calculation
+        throw(ErrorException("Failed to create a twofold interval PCM."))
+    end
+
+    return 𝒜
+end
+
+export isTwofoldIntervalPCM, inner, outer, createTwofoldIntervalMatrix, createTwofoldIntervalPCM
 
 end

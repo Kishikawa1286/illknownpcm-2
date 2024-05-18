@@ -1,0 +1,88 @@
+# IntervalWeightVector
+
+```julia
+using IntervalArithmetic
+using IntervalArithmetic.Symbols
+```
+
+## 区間重要度ベクトルの定義
+
+$$
+W = \left( W_i \right)_{n}
+= \left( \left[ w_i^\mathrm{L}, w_i^\mathrm{U} \right] \right)_{n}
+$$
+
+- $n$ 次元ベクトル
+- $w_i^\mathrm{L} > 0, ~~ i \in N$
+
+```julia
+"""
+    isIntervalWeightVector(W)
+
+Check whether `W` is an interval weight vector.
+"""
+function isIntervalWeightVector(
+    W::Vector{Interval{T}}
+)::Bool where {T <: Real}
+    n = length(W)
+
+    for i in 1:n
+        Wᵢ = W[i]
+        if !iscommon(Wᵢ) return false end
+        wᵢᴸ = inf(Wᵢ)
+        if wᵢᴸ <= 0 return false end
+    end
+
+    return true
+end
+```
+
+## 区間重要度ベクトルの正規性
+
+任意の $w_i \in W_i, i \in N$ に対して $\sum_{j \in N \backslash \{i\}} w_j + w_i = 1$ となるような
+$w_j \in W_j, j \in N \backslash \{i\}$ が存在するとき, $W$ は正規性をもつという.
+
+また, 次が成り立つ.
+
+
+$$
+  W \text{ が正規性をもつ }
+  ~~ \Longleftrightarrow ~~
+  \sum_{j \in N \backslash \{i\}} w_j^\mathrm{U} + w_i^\mathrm{L} \geq 1, ~~
+  \sum_{j \in N \backslash \{i\}} w_j^\mathrm{L} + w_i^\mathrm{U} \leq 1, \quad
+  i \in N
+$$
+
+```julia
+"""
+    isNormalizedIntervalWeightVector(W)
+
+Check whether `W` is a normalized interval weight vector.
+"""
+function isNormalizedIntervalWeightVector(
+    W::Vector{Interval{T}}
+)::Bool where {T <: Real}
+    n = length(W)
+    if !isIntervalWeightVector(W) return false end
+
+    for i in 1:n
+        wᵢᴸ = inf(W[i]); wᵢᵁ = sup(W[i])
+
+        Σⱼwⱼᴸ = 0; Σⱼwⱼᵁ = 0
+        for j in 1:n
+            if i == j continue end
+            wⱼᴸ = inf(W[j]); wⱼᵁ = sup(W[j])
+            Σⱼwⱼᴸ += wⱼᴸ; Σⱼwⱼᵁ += wⱼᵁ
+        end
+
+        if Σⱼwⱼᵁ + wᵢᴸ < 1 return false end
+        if Σⱼwⱼᴸ + wᵢᵁ > 1 return false end
+    end
+
+    return true
+end
+```
+
+```julia
+export isIntervalWeightVector, isNormalizedIntervalWeightVector
+```

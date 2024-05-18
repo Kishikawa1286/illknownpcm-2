@@ -104,6 +104,29 @@ function RI(n::Integer)::Real
     end
 end
 
-export isCrispPCM, CI, CR, RI
+"""
+    PCM(W)
+
+Generate a crisp PCM from the weight vector `W`.
+Throws an `ArgumentError` if `W` is not a positive vector.
+"""
+function PCM(W::Vector{T})::Matrix{T} where {T <: Real}
+    if any(w -> w ≤ 0, W)
+        throw(ArgumentError("W must be positive"))
+    end
+
+    n = length(W)
+    A = Matrix{T}(undef, n, n)
+
+    for i in 1:n, j in 1:n
+        wᵢ = W[i]; wⱼ = W[j]
+        aᵢⱼ = wᵢ / wⱼ
+        A[i, j] = aᵢⱼ
+    end
+
+    return A
+end
+
+export isCrispPCM, CI, CR, RI, PCM
 
 end
