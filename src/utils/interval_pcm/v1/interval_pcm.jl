@@ -7,7 +7,6 @@ using IntervalArithmetic
 using IntervalArithmetic.Symbols
 
 include("../../nearly_equal/v1/nearly_equal.jl")
-
 using .NearlyEqual
 
 """
@@ -49,8 +48,8 @@ Check whether the given matrix `A` is an interval PCM.
     # Check if the diagonal elements are [1, 1]
     for i in 1:n
         aᵢⱼᴸ = inf(A[i,i]); aᵢⱼᵁ = sup(A[i,i])
-        if aᵢⱼᴸ != 1 return false end
-        if aᵢⱼᵁ != 1 return false end
+        if !isNearlyEqual(aᵢⱼᴸ, 1.0, tolerance=1e-10) return false end
+        if !isNearlyEqual(aᵢⱼᵁ, 1.0, tolerance=1e-10) return false end
     end
 
     return true 

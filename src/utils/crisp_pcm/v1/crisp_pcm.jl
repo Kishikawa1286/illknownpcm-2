@@ -6,7 +6,6 @@ module CrispPCM
 using LinearAlgebra
 
 include("../../nearly_equal/v1/nearly_equal.jl")
-
 using .NearlyEqual
 
 """
@@ -75,7 +74,7 @@ end
 Calculate the Random Index for the dimension `n` to calculate [`CR`](@ref).
 Throws an `ArgumentError` if `n` is less than 3.
 """
-@inline function RI(n::Integer)::Real
+function RI(n::Integer)::Real
     if n < 3
         throw(ArgumentError("n must be greater than or equal to 3"))
     end

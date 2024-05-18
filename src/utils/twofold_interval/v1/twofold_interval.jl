@@ -7,10 +7,9 @@ using IntervalArithmetic
 using IntervalArithmetic.Symbols
 
 include("../../nearly_equal/v1/nearly_equal.jl")
-
 using .NearlyEqual
 
-const TwofoldInterval{T} = Tuple{Interval{T}, Interval{T}} where {T <: Real}
+const TwofoldInterval = Tuple{Interval{T}, Interval{T}} where {T <: Real}
 
 """
     isTwofoldInterval(A;
@@ -52,14 +51,14 @@ end
 
 Get inner interval of twofold interval `A`.
 """
-@inline inner(A::TwofoldInterval)::Interval = A[1]
+inner(A::TwofoldInterval)::Interval = A[1]
 
 """
     outer(A)
 
 Get outer interval of twofold interval `A`.
 """
-@inline outer(A::TwofoldInterval)::Interval = A[2]
+outer(A::TwofoldInterval)::Interval = A[2]
 
 export TwofoldInterval, isTwofoldInterval, inner, outer
 

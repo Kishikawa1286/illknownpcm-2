@@ -8,7 +8,7 @@ module NearlyEqual
 
     Check if `a` and `b` are nearly equal. The default tolerance is `1e-6`.
 """
-@inline function isNearlyEqual(
+function isNearlyEqual(
     a::T,
     b::T;
     tolerance=1e-6

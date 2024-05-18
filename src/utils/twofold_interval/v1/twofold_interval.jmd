@@ -5,7 +5,6 @@ using IntervalArithmetic
 using IntervalArithmetic.Symbols
 
 include("../../nearly_equal/v1/nearly_equal.jl")
-
 using .NearlyEqual
 ```
 
@@ -24,7 +23,7 @@ $$
 - $\mathscr{A}^- \subseteq \mathscr{A}^+ ~~ (\alpha^{\mathrm{L}+} \leq \alpha^{\mathrm{L}-} \leq \alpha^{\mathrm{U}-} \leq \alpha^{\mathrm{U}+})$
 
 ```julia
-const TwofoldInterval{T} = Tuple{Interval{T}, Interval{T}} where {T <: Real}
+const TwofoldInterval = Tuple{Interval{T}, Interval{T}} where {T <: Real}
 ```
 
 ```julia
@@ -36,10 +35,10 @@ const TwofoldInterval{T} = Tuple{Interval{T}, Interval{T}} where {T <: Real}
 Check if `A` is a twofold interval.
 """
 @inline function isTwofoldInterval(
-        A::TwofoldInterval{T};
+        A::TwofoldInterval;
         allow_uncommon_inner_interval::Bool=true,
         strict::Bool=false
-)::Bool where {T <: Real}
+)::Bool
     # Check if outer interval is common
     if !iscommon(A[2]) return false end
 
@@ -64,13 +63,15 @@ Check if `A` is a twofold interval.
 end
 ```
 
+## ユーティリティ関数
+
 ```julia
 """
     inner(A)
 
 Get inner interval of twofold interval `A`.
 """
-@inline inner(A::TwofoldInterval{T})::Interval{T} where {T <: Real} = A[1]
+inner(A::TwofoldInterval)::Interval = A[1]
 ```
 
 ```julia
@@ -79,7 +80,7 @@ Get inner interval of twofold interval `A`.
 
 Get outer interval of twofold interval `A`.
 """
-@inline outer(A::TwofoldInterval{T})::Interval{T} where {T <: Real} = A[2]
+outer(A::TwofoldInterval)::Interval = A[2]
 ```
 
 ```julia
