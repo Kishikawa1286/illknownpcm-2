@@ -38,18 +38,22 @@ Check whether `𝒲` is a twofold interval weight vector or not.
 """
 @inline function isTwofoldIntervalWeightVector(
     𝒲::Vector{TwofoldInterval{T}};
-    allow_uncommon_inner_interval=true,
-    strict=false
+    allow_uncommon_inner_interval = true,
+    strict = false,
 )::Bool where {T <: Real}
     n = length(𝒲)
+
     for i in 1:n
         𝒲ᵢ = 𝒲[i]
         if !isTwofoldInterval(
             𝒲ᵢ;
-            allow_uncommon_inner_interval=allow_uncommon_inner_interval,
-            strict=strict
-        ) return false end
+            allow_uncommon_inner_interval = allow_uncommon_inner_interval,
+            strict = strict,
+        )
+            return false
+        end
     end
+
     return true
 end
 ```

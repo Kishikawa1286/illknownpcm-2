@@ -154,7 +154,7 @@ function Sim(
     n = size(A, 1)
     sum = zero(T)
     for i = 1:n, j = 1:n
-        if i >= j continue end
+        if i ≥ j continue end
         Aᵢⱼ = A[i,j]; Bᵢⱼ = B[i,j]
         sum += Sim(Aᵢⱼ, Bᵢⱼ)
     end
@@ -186,7 +186,7 @@ function Inc(
     n = size(A, 1)
     sum = zero(T)
     for i = 1:n, j = 1:n
-        if i >= j continue end
+        if i ≥ j continue end
         Aᵢⱼ = A[i,j]; Bᵢⱼ = B[i,j]
         sum += Inc(Aᵢⱼ, Bᵢⱼ)
     end
