@@ -3,11 +3,15 @@
 
 module IntervalPCM
 
+import Base: ∈, ∋
 using IntervalArithmetic
 using IntervalArithmetic.Symbols
 
 include("../../nearly_equal/v1/nearly_equal.jl")
 using .NearlyEqual
+
+include("../../crisp_pcm/v1/crisp_pcm.jl")
+using .CrispPCM
 
 include("../../interval_weight_vector/v1/interval_weight_vector.jl")
 using .IntervalWeightVector
@@ -19,8 +23,11 @@ Check whether the given matrix `A` is an interval PCM.
 """
 @inline function isIntervalPCM(
     A::Matrix{Interval{T}};
-    allow_uncommon::Bool = false
+    allow_uncommon::Bool = false,
+    strict::Bool = false
 )::Bool where {T <: Real}
+    tolerance = strict ? 1e-10 : 1e-6
+
     m, n = size(A)
     # Check if the matrix is square
     if m != n return false end
@@ -43,20 +50,72 @@ Check whether the given matrix `A` is an interval PCM.
             if aᵢⱼᴸ ≤ 0 || aⱼᵢᴸ ≤ 0 return false end
 
             # Check reciprocity
-            if !isNearlyEqual(aᵢⱼᴸ, 1 / aⱼᵢᵁ) return false end
-            if !isNearlyEqual(aᵢⱼᵁ, 1 / aⱼᵢᴸ) return false end
+            if !isNearlyEqual(aᵢⱼᴸ, 1 / aⱼᵢᵁ; tolerance=tolerance) return false end
+            if !isNearlyEqual(aᵢⱼᵁ, 1 / aⱼᵢᴸ; tolerance=tolerance) return false end
         end
     end
 
     # Check if the diagonal elements are [1, 1]
     for i in 1:n
         aᵢⱼᴸ = inf(A[i,i]); aᵢⱼᵁ = sup(A[i,i])
-        if !isNearlyEqual(aᵢⱼᴸ, 1.0, tolerance=1e-10) return false end
-        if !isNearlyEqual(aᵢⱼᵁ, 1.0, tolerance=1e-10) return false end
+        if !isNearlyEqual(aᵢⱼᴸ, 1.0; tolerance=1e-10) return false end
+        if !isNearlyEqual(aᵢⱼᵁ, 1.0; tolerance=1e-10) return false end
     end
 
     return true 
 end
+
+"""
+    isIntervalPCMContainingCrispPCM(A, B; strict = false)
+
+Check whether the given interval PCM `B` contains the given crisp PCM `A`.
+If `strict` is `true`, then the function returns `false` if `A` is not exactly equal to `B`.
+Throws an `ArgumentError` if `A` is not a crisp PCM or `B` is not an interval PCM.
+"""
+function isIntervalPCMContainingCrispPCM(
+    A::Matrix{T},
+    B::Matrix{Interval{T}};
+    strict::Bool = false
+)::Bool where {T <: Real}
+    if !isCrispPCM(A)
+        throw(ArgumentError("The given matrix is not a crisp PCM."))
+    end
+    if !isIntervalPCM(B)
+        throw(ArgumentError("The given matrix is not an interval PCM."))
+    end
+
+    tolerance = strict ? 1e-10 : 1e-6
+
+    n = size(A, 1)
+
+    for i = 1:n, j = 1:n
+        aᵢⱼ = A[i,j]; bᵢⱼᴸ = inf(B[i,j]); bᵢⱼᵁ = sup(B[i,j])
+
+        if bᵢⱼᴸ ≤ aᵢⱼ && aᵢⱼ ≤ bᵢⱼᵁ continue end
+
+        if strict return false end
+
+        if !isNearlyEqual(aᵢⱼ, bᵢⱼᴸ; tolerance=tolerance) && !isNearlyEqual(aᵢⱼ, bᵢⱼᵁ; tolerance=tolerance)
+            return false
+        end
+    end
+
+    return true
+end
+
+"""
+    ∈(A, B)
+
+Unicode alias for `isIntervalPCMContainingCrispPCM(A, B)`.
+"""
+∈(A::Matrix, B::Matrix{Interval})::Bool = isIntervalPCMContainingCrispPCM(A, B)
+
+"""
+    ∋(B, A)
+
+Unicode alias for `isIntervalPCMContainingCrispPCM(A, B)`.
+"""
+∋(B::Matrix{Interval}, A::Matrix)::Bool = isIntervalPCMContainingCrispPCM(A, B)
 
 """
     PCM(W)
@@ -91,6 +150,6 @@ function PCM(
     return A
 end
 
-export isIntervalPCM, PCM
+export isIntervalPCM, isIntervalPCMContainingCrispPCM, ∈, ∋, PCM
 
 end

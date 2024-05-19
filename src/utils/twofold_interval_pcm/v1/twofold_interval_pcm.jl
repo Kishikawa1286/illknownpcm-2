@@ -3,6 +3,7 @@
 
 module TwofoldIntervalPCM
 
+import Base: ∈, ∋
 using IntervalArithmetic
 using IntervalArithmetic.Symbols
 
@@ -95,6 +96,74 @@ Check if the matrix `𝒜` is a twofold interval PCM.
 end
 
 """
+    isTwofoldIntervalPCMContainingIntervalPCM(
+        A,
+        𝒜;
+        strict=false
+    )
+
+Check if the interval PCM `A` is contained in the twofold interval PCM `𝒜`.
+Throws a `DimensionMismatch` if the sizes of the given matrices `A` and `𝒜` are not the same.
+Throw an `ArgumentError` if the given matrices `A` and `𝒜` are not interval PCMs.
+"""
+function isTwofoldIntervalPCMContainingIntervalPCM(
+    A::Matrix{Interval{T}},
+    𝒜::Matrix{TwofoldInterval{T}};
+    strict::Bool=false
+)::Bool where {T <: Real}
+    if !isIntervalPCM(A)
+        throw(ArgumentError("A must be an interval PCM."))
+    end
+    if !isTwofoldIntervalPCM(𝒜)
+        throw(ArgumentError("𝒜 must be a twofold interval PCM."))
+    end
+
+    if size(A) != size(𝒜)
+        throw(DimensionMismatch("The sizes of A and 𝒜 must be the same."))
+    end
+
+    tolerance = strict ? 1e-10 : 1e-6
+
+    n = size(A, 1)
+    𝒜⁻ = inner(𝒜); 𝒜⁺ = outer(𝒜)
+
+    for i = 1:n, j = 1:n
+        𝒜ᵢⱼ⁻ = 𝒜⁻[i, j]; 𝒜ᵢⱼ⁺ = 𝒜⁺[i, j]
+        αᵢⱼᴸ⁻ = inf(𝒜ᵢⱼ⁻); αᵢⱼᵁ⁻ = sup(𝒜ᵢⱼ⁻)
+        αᵢⱼᴸ⁺ = inf(𝒜ᵢⱼ⁺); αᵢⱼᵁ⁺ = sup(𝒜ᵢⱼ⁺)
+        Aᵢⱼ = A[i, j]
+        aᵢⱼᴸ = inf(Aᵢⱼ); aᵢⱼᵁ = sup(Aᵢⱼ)
+
+        if αᵢⱼᴸ⁻ ≤ aᵢⱼᴸ && aᵢⱼᵁ ≤ αᵢⱼᵁ⁺ continue end
+
+        if isNearlyEqual(αᵢⱼᴸ⁺, aᵢⱼᴸ; tolerance=tolerance) continue end
+        if isNearlyEqual(aᵢⱼᴸ, αᵢⱼᴸ⁻; tolerance=tolerance) continue end
+        if isNearlyEqual(αᵢⱼᵁ⁻, aᵢⱼᵁ; tolerance=tolerance) continue end
+        if isNearlyEqual(aᵢⱼᵁ, αᵢⱼᵁ⁺; tolerance=tolerance) continue end
+
+        throw(ErrorException("The interval PCM A is not contained in the twofold interval PCM 𝒜 at indices ($i, $j)."))
+
+        return false
+    end
+
+    return true
+end
+
+"""
+    ∈(A, 𝒜)
+
+Unicode alias for `isTwofoldIntervalPCMContainingIntervalPCM(A, 𝒜)`.
+"""
+∈(A::Matrix{Interval{T}}, 𝒜::Matrix{TwofoldInterval{T}}) where {T <: Real} = isTwofoldIntervalPCMContainingIntervalPCM(A, 𝒜)
+
+"""
+    ∋(𝒜, A)
+
+Unicode alias for `isTwofoldIntervalPCMContainingIntervalPCM(A, 𝒜)`.
+"""
+∋(𝒜::Matrix{TwofoldInterval{T}}, A::Matrix{Interval{T}}) where {T <: Real} = isTwofoldIntervalPCMContainingIntervalPCM(A, 𝒜)
+
+"""
     inner(𝒜)
 
 Extract the interval matrix consisting of the inner intervals of the each element of the twofold interval matrix `𝒜`.
@@ -180,6 +249,6 @@ function createTwofoldIntervalPCM(
     return 𝒜
 end
 
-export isTwofoldIntervalPCM, inner, outer, createTwofoldIntervalMatrix, createTwofoldIntervalPCM
+export isTwofoldIntervalPCM, inner, outer, isTwofoldIntervalPCMContainingIntervalPCM, ∈, ∋, createTwofoldIntervalMatrix, createTwofoldIntervalPCM
 
 end
