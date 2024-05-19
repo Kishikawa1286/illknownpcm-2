@@ -6,6 +6,9 @@ module IntervalWeightVector
 using IntervalArithmetic
 using IntervalArithmetic.Symbols
 
+include("../../nearly_equal/v1/nearly_equal.jl")
+using .NearlyEqual
+
 """
     isIntervalWeightVector(W)
 
@@ -26,14 +29,80 @@ function isIntervalWeightVector(
     return true
 end
 
+export isIntervalWeightVector
+
 """
-    isNormalizedIntervalWeightVector(W)
+    isincluded(V, W; strict = false)
+
+Check whether the given interval weight vector `W` contains the given crisp weight vector `V`.
+If `strict` is `true`, then the function returns `false` if `V` is not exactly equal to `W`.
+Throws an `ArgumentError` if `V` is not a crisp weight vector or `W` is not an interval weight vector.
+Throws a `DimensionMismatch` if the dimensions of `V` and `W` do not match.
+"""
+function isincluded(
+    V::Vector{T},
+    W::Vector{Interval{T}};
+    strict::Bool = false
+)::Bool where {T <: Real}
+    if !isCrispWeightVector(V)
+        throw(ArgumentError("The given vector is not a crisp weight vector."))
+    end
+    if !isIntervalWeightVector(W)
+        throw(ArgumentError("The given vector is not an interval weight vector."))
+    end
+
+    if length(V) != length(W)
+        throw(DimensionMismatch("The dimensions of the given vectors do not match."))
+    end
+
+    tolerance = strict ? 1e-10 : 1e-6
+
+    n = length(V)
+
+    for i in 1:n
+        Wᵢ = W[i]; vᵢ = V[i]
+        wᵢᴸ = inf(Wᵢ); wᵢᵁ = sup(Wᵢ)
+
+        if vᵢ ∈ Wᵢ continue end
+
+        if strict return false end
+
+        if !isNearlyEqual(vᵢ, wᵢᴸ; tolerance=tolerance) ||        
+            !isNearlyEqual(vᵢ, wᵢᵁ; tolerance=tolerance)
+            return false
+        end
+    end
+
+    return true
+end
+
+"""
+    ∈(V, W)
+
+Unicode alias for `isincluded(V, W)`.
+"""
+∈(V::Vector, W::Vector{Interval})::Bool = isincluded(V, W)
+
+"""
+    ∋(W, V)
+
+Unicode alias for `isincluded(V, W)`.
+"""
+∋(W::Vector{Interval}, V::Vector)::Bool = isincluded(V, W)
+
+export isincluded, ∈, ∋
+
+"""
+    isNormalizedIntervalWeightVector(W; strict=false)
 
 Check whether `W` is a normalized interval weight vector.
 """
 function isNormalizedIntervalWeightVector(
-    W::Vector{Interval{T}}
+    W::Vector{Interval{T}};
+    strict::Bool=false
 )::Bool where {T <: Real}
+    tolerance = strict ? 1e-10 : 1e-6
+
     n = length(W)
     if !isIntervalWeightVector(W) return false end
 
@@ -47,13 +116,15 @@ function isNormalizedIntervalWeightVector(
             Σⱼwⱼᴸ += wⱼᴸ; Σⱼwⱼᵁ += wⱼᵁ
         end
 
-        if Σⱼwⱼᵁ + wᵢᴸ < 1 return false end
-        if Σⱼwⱼᴸ + wᵢᵁ > 1 return false end
+        if Σⱼwⱼᵁ + wᵢᴸ < 1 &&
+            !isNearlyEqual(Σⱼwⱼᵁ + wᵢᴸ, 1; tolerance=tolerance) return false end
+        if Σⱼwⱼᴸ + wᵢᵁ > 1 &&
+            !isNearlyEqual(Σⱼwⱼᴸ + wᵢᵁ, 1; tolerance=tolerance) return false end
     end
 
     return true
 end
 
-export isIntervalWeightVector, isNormalizedIntervalWeightVector
+export isNormalizedIntervalWeightVector
 
 end

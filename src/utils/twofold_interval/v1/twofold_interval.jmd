@@ -205,6 +205,10 @@ Unicode alias for `isincluded(𝒜, ℬ)`.
 ⊇(ℬ::TwofoldInterval, 𝒜::TwofoldInterval)::Bool = isincluded(𝒜, ℬ)
 ```
 
+```julia
+export isincluded, ⊆, ⊇
+```
+
 ## ユーティリティ関数
 
 ```julia

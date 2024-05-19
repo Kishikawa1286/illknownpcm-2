@@ -17,9 +17,11 @@ include("../../interval_pcm/v1/interval_pcm.jl")
 using .IntervalPCM
 
 """
-    isTwofoldIntervalPCM(𝒜;
+    isTwofoldIntervalPCM(
+        𝒜;
         allow_uncommon_inner_interval=true,
-        strict=false)
+        strict=false
+    )
 
 Check if the matrix `𝒜` is a twofold interval PCM.
 """
@@ -28,6 +30,8 @@ Check if the matrix `𝒜` is a twofold interval PCM.
     allow_uncommon_inner_interval::Bool=true,
     strict::Bool=false
 )::Bool where {T <: Real}
+    tolerance = strict ? 1e-10 : 1e-6
+
     m, n = size(𝒜)
     # Check if the matrix is square
     if m != n return false end
@@ -52,13 +56,8 @@ Check if the matrix `𝒜` is a twofold interval PCM.
             αⱼᵢᴸ⁺ = inf(𝒜ⱼᵢ⁺); αⱼᵢᵁ⁺ = sup(𝒜ⱼᵢ⁺)
 
             # Check reciprocity
-            if strict
-                if !isNearlyEqual(αᵢⱼᴸ⁺, 1 / αⱼᵢᵁ⁺, tolerance=1e-10) return false end
-                if !isNearlyEqual(αᵢⱼᵁ⁺, 1 / αⱼᵢᴸ⁺, tolerance=1e-10) return false end
-            else
-                if !isNearlyEqual(αᵢⱼᴸ⁺, 1 / αⱼᵢᵁ⁺) return false end
-                if !isNearlyEqual(αᵢⱼᵁ⁺, 1 / αⱼᵢᴸ⁺) return false end
-            end
+            if !isNearlyEqual(αᵢⱼᴸ⁺, 1 / αⱼᵢᵁ⁺, tolerance=tolerance) return false end
+            if !isNearlyEqual(αᵢⱼᵁ⁺, 1 / αⱼᵢᴸ⁺, tolerance=tolerance) return false end
 
             continue
         end
@@ -80,20 +79,15 @@ Check if the matrix `𝒜` is a twofold interval PCM.
         αⱼᵢᴸ⁺ = inf(𝒜ⱼᵢ⁺); αⱼᵢᵁ⁺ = sup(𝒜ⱼᵢ⁺)
 
         # Check reciprocity
-        if strict
-            if !isNearlyEqual(αᵢⱼᴸ⁻, 1 / αⱼᵢᵁ⁻, tolerance=1e-10) return false end
-            if !isNearlyEqual(αᵢⱼᵁ⁻, 1 / αⱼᵢᴸ⁻, tolerance=1e-10) return false end
-            if !isNearlyEqual(αᵢⱼᴸ⁺, 1 / αⱼᵢᵁ⁺, tolerance=1e-10) return false end
-            if !isNearlyEqual(αᵢⱼᵁ⁺, 1 / αⱼᵢᴸ⁺, tolerance=1e-10) return false end
-        else
-            if !isNearlyEqual(αᵢⱼᴸ⁻, 1 / αⱼᵢᵁ⁻) return false end
-            if !isNearlyEqual(αᵢⱼᵁ⁻, 1 / αⱼᵢᴸ⁻) return false end
-            if !isNearlyEqual(αᵢⱼᴸ⁺, 1 / αⱼᵢᵁ⁺) return false end
-            if !isNearlyEqual(αᵢⱼᵁ⁺, 1 / αⱼᵢᴸ⁺) return false end
-        end
+        if !isNearlyEqual(αᵢⱼᴸ⁻, 1 / αⱼᵢᵁ⁻, tolerance=tolerance) return false end
+        if !isNearlyEqual(αᵢⱼᵁ⁻, 1 / αⱼᵢᴸ⁻, tolerance=tolerance) return false end
+        if !isNearlyEqual(αᵢⱼᴸ⁺, 1 / αⱼᵢᵁ⁺, tolerance=tolerance) return false end
+        if !isNearlyEqual(αᵢⱼᵁ⁺, 1 / αⱼᵢᴸ⁺, tolerance=tolerance) return false end
     end
     return true
 end
+
+export isTwofoldIntervalPCM
 
 """
     isTwofoldIntervalPCMContainingIntervalPCM(
@@ -162,6 +156,8 @@ Unicode alias for `isTwofoldIntervalPCMContainingIntervalPCM(A, 𝒜)`.
 Unicode alias for `isTwofoldIntervalPCMContainingIntervalPCM(A, 𝒜)`.
 """
 ∋(𝒜::Matrix{TwofoldInterval{T}}, A::Matrix{Interval{T}}) where {T <: Real} = isTwofoldIntervalPCMContainingIntervalPCM(A, 𝒜)
+
+export isTwofoldIntervalPCMContainingIntervalPCM, ∈, ∋
 
 """
     inner(𝒜)
@@ -249,6 +245,6 @@ function twofoldIntervalPCM(
     return 𝒜
 end
 
-export isTwofoldIntervalPCM, inner, outer, isTwofoldIntervalPCMContainingIntervalPCM, ∈, ∋, twofoldIntervalMatrix, twofoldIntervalPCM
+export inner, outer, twofoldIntervalMatrix, twofoldIntervalPCM
 
 end

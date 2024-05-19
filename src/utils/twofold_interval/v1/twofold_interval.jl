@@ -153,6 +153,8 @@ Unicode alias for `isincluded(𝒜, ℬ)`.
 """
 ⊇(ℬ::TwofoldInterval, 𝒜::TwofoldInterval)::Bool = isincluded(𝒜, ℬ)
 
+export isincluded, ⊆, ⊇
+
 """
     inner(A)
 

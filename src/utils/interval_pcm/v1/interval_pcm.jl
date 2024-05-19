@@ -65,14 +65,17 @@ Check whether the given matrix `A` is an interval PCM.
     return true 
 end
 
+export isIntervalPCM
+
 """
-    isIntervalPCMContainingCrispPCM(A, B; strict = false)
+    isincluded(A, B; strict = false)
 
 Check whether the given interval PCM `B` contains the given crisp PCM `A`.
 If `strict` is `true`, then the function returns `false` if `A` is not exactly equal to `B`.
 Throws an `ArgumentError` if `A` is not a crisp PCM or `B` is not an interval PCM.
+Throws a `DimensionMismatch` if the dimensions of `A` and `B` do not match.
 """
-function isIntervalPCMContainingCrispPCM(
+function isincluded(
     A::Matrix{T},
     B::Matrix{Interval{T}};
     strict::Bool = false
@@ -82,6 +85,10 @@ function isIntervalPCMContainingCrispPCM(
     end
     if !isIntervalPCM(B)
         throw(ArgumentError("The given matrix is not an interval PCM."))
+    end
+
+    if size(A) != size(B)
+        throw(DimensionMismatch("The dimensions of the given matrices do not match."))
     end
 
     tolerance = strict ? 1e-10 : 1e-6
@@ -106,16 +113,18 @@ end
 """
     ∈(A, B)
 
-Unicode alias for `isIntervalPCMContainingCrispPCM(A, B)`.
+Unicode alias for `isincluded(A, B)`.
 """
-∈(A::Matrix, B::Matrix{Interval})::Bool = isIntervalPCMContainingCrispPCM(A, B)
+∈(A::Matrix, B::Matrix{Interval})::Bool = isincluded(A, B)
 
 """
     ∋(B, A)
 
-Unicode alias for `isIntervalPCMContainingCrispPCM(A, B)`.
+Unicode alias for `isincluded(A, B)`.
 """
-∋(B::Matrix{Interval}, A::Matrix)::Bool = isIntervalPCMContainingCrispPCM(A, B)
+∋(B::Matrix{Interval}, A::Matrix)::Bool = isincluded(A, B)
+
+export isincluded, ∈, ∋
 
 """
     intervalPCM(W)
@@ -150,6 +159,6 @@ function intervalPCM(
     return A
 end
 
-export isIntervalPCM, isIntervalPCMContainingCrispPCM, ∈, ∋, intervalPCM
+export intervalPCM
 
 end

@@ -49,6 +49,10 @@ Check if the matrix `A` is a crisp PCM.
 end
 ```
 
+```julia
+export isCrispPCM
+```
+
 ## 整合性指標
 
 ### CI (Consistency Index)
@@ -155,6 +159,10 @@ function RI(n::Integer)::Real
 end
 ```
 
+```julia
+export CI, CR, RI
+```
+
 ## ユーティリティ関数
 
 重要度ベクトル $W$ から $a_{ij} = w_i / w_j, ~ i, j \in N$ である PCM $A = (a_{ij})$ を生成する.
@@ -185,5 +193,5 @@ end
 ```
 
 ```julia
-export isCrispPCM, CI, CR, RI, PCM
+export PCM
 ```

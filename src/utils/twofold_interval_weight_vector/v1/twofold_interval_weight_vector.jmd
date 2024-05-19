@@ -53,6 +53,10 @@ Check whether `𝒲` is a twofold interval weight vector or not.
 end
 ```
 
+```julia
+export isTwofoldIntervalWeightVector
+```
+
 ## 区間重要度ベクトルが二重区間重要度ベクトルに含まれるかどうかの判定
 
 $W = \left( W_i \right)_n$ を区間重要度ベクトル、$\mathscr{W} = \left( \left( \mathscr{W}_i^-, \mathscr{W}_i^+ \right) \right)_n$ を二重区間重要度ベクトルとする。
@@ -103,6 +107,10 @@ Unicode alias for `isincluded(W, 𝒲)`.
 ∋(W::Vector{Interval}, 𝒲::Vector{TwofoldInterval})::Bool = isincluded(W, 𝒲)
 ```
 
+```julia
+export isincluded, ∈, ∋
+```
+
 ## ユーティリティ関数
 
 ```julia
@@ -125,4 +133,8 @@ Get the outer intervals of twofold interval vector `𝒲`.
 function outer(𝒲::Vector{TwofoldInterval})::Vector{Interval}
     return [outer(𝒲ᵢ) for 𝒲ᵢ in 𝒲]
 end
+```
+
+```julia
+export inner, outer
 ```

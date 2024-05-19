@@ -37,6 +37,8 @@ Check if the matrix `A` is a crisp PCM.
     return true
 end
 
+export isCrispPCM
+
 """
     CI(A)
 
@@ -104,6 +106,8 @@ function RI(n::Integer)::Real
     end
 end
 
+export CI, CR, RI
+
 """
     PCM(W)
 
@@ -127,6 +131,6 @@ function PCM(W::Vector{T})::Matrix{T} where {T <: Real}
     return A
 end
 
-export isCrispPCM, CI, CR, RI, PCM
+export PCM
 
 end

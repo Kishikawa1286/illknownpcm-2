@@ -38,6 +38,8 @@ Check whether `𝒲` is a twofold interval weight vector or not.
     return true
 end
 
+export isTwofoldIntervalWeightVector
+
 """
     isincluded(W, 𝒲; strict=false)
 
@@ -74,6 +76,8 @@ Unicode alias for `isincluded(W, 𝒲)`.
 """
 ∋(W::Vector{Interval}, 𝒲::Vector{TwofoldInterval})::Bool = isincluded(W, 𝒲)
 
+export isincluded, ∈, ∋
+
 """
     inner(𝒲)
 
@@ -91,5 +95,7 @@ Get the outer intervals of twofold interval vector `𝒲`.
 function outer(𝒲::Vector{TwofoldInterval})::Vector{Interval}
     return [outer(𝒲ᵢ) for 𝒲ᵢ in 𝒲]
 end
+
+export inner, outer
 
 end
