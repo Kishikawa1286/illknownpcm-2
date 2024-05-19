@@ -3,7 +3,6 @@
 
 module IntervalPCM
 
-import Base: ∈, ∋
 using IntervalArithmetic
 using IntervalArithmetic.Symbols
 
@@ -15,6 +14,7 @@ using .CrispPCM
 
 include("../../interval_weight_vector/v1/interval_weight_vector.jl")
 using .IntervalWeightVector
+import .IntervalWeightVector: ∈, ∋
 
 """
     isIntervalPCM(A; allow_uncommon=false)

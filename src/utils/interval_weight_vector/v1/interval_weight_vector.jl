@@ -3,6 +3,7 @@
 
 module IntervalWeightVector
 
+import Base: ∈, ∋
 using IntervalArithmetic
 using IntervalArithmetic.Symbols
 

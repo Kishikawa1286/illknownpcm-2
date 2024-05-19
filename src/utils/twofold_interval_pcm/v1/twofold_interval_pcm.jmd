@@ -1,7 +1,6 @@
 # TwofoldIntervalPCM
 
 ```julia
-import Base: ∈, ∋
 using IntervalArithmetic
 using IntervalArithmetic.Symbols
 
@@ -13,6 +12,13 @@ using .TwofoldIntervalArithmetic
 
 include("../../interval_pcm/v1/interval_pcm.jl")
 using .IntervalPCM
+
+include("../../interval_weight_vector/v1/interval_weight_vector.jl")
+using .IntervalWeightVector
+
+include("../../twofold_interval_weight_vector/v1/twofold_interval_weight_vector.jl")
+using .TwofoldIntervalWeightVector
+import .TwofoldIntervalWeightVector: inner, outer, ∈, ∋
 ```
 
 ## 二重区間 PCM の定義
@@ -254,6 +260,49 @@ function twofoldIntervalMatrix(
 
     for i = 1:m, j = 1:n
         𝒜[i, j] = (𝒜⁻[i, j], 𝒜⁺[i, j])
+    end
+
+    return 𝒜
+end
+```
+
+```julia
+"""
+    twofoldIntervalPCM(𝒲)
+
+Create a twofold interval PCM from a twofold interval weight vector.
+"""
+function twofoldIntervalPCM(
+    𝒲::Vector{TwofoldInterval{T}}
+)::Matrix{TwofoldInterval{T}} where {T <: Real}
+    if !isTwofoldIntervalWeightVector(𝒲)
+        throw(ArgumentError("𝒲 must be a twofold interval weight vector."))
+    end
+
+    n = length(𝒲)
+
+    𝒜 = Matrix{TwofoldInterval}(undef, n, n)
+
+    for i = 1:n, j = 1:n
+        if i == j
+            𝒜[i, j] = (1..1, 1..1)
+            continue
+        end
+
+        𝒲ᵢ = 𝒲[i]; 𝒲ⱼ = 𝒲[j]
+        𝒲ᵢ⁻ = inner(𝒲ᵢ); 𝒲ᵢ⁺ = outer(𝒲ᵢ)
+        𝒲ⱼ⁻ = inner(𝒲ⱼ); 𝒲ⱼ⁺ = outer(𝒲ⱼ)
+        wᵢᴸ⁻ = inf(𝒲ᵢ⁻); wᵢᵁ⁻ = sup(𝒲ᵢ⁻)
+        wᵢᴸ⁺ = inf(𝒲ᵢ⁺); wᵢᵁ⁺ = sup(𝒲ᵢ⁺)
+        wⱼᴸ⁻ = inf(𝒲ⱼ⁻); wⱼᵁ⁻ = sup(𝒲ⱼ⁻)
+        wⱼᴸ⁺ = inf(𝒲ⱼ⁺); wⱼᵁ⁺ = sup(𝒲ⱼ⁺)
+
+        αᵢⱼᴸ⁻ = wᵢᴸ⁻ / wⱼᵁ⁻; αᵢⱼᵁ⁻ = wᵢᵁ⁻ / wⱼᴸ⁻
+        αᵢⱼᴸ⁺ = wᵢᴸ⁺ / wⱼᵁ⁺; αᵢⱼᵁ⁺ = wᵢᵁ⁺ / wⱼᴸ⁺
+
+        𝒜ᵢⱼ⁻ = αᵢⱼᴸ⁻..αᵢⱼᵁ⁻; 𝒜ᵢⱼ⁺ = αᵢⱼᴸ⁺..αᵢⱼᵁ⁺
+
+        𝒜[i, j] = (𝒜ᵢⱼ⁻, 𝒜ᵢⱼ⁺)
     end
 
     return 𝒜

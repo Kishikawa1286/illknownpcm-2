@@ -11,6 +11,7 @@ using .NearlyEqual
 
 include("../../twofold_interval/v1/twofold_interval.jl")
 using .TwofoldIntervalArithmetic
+import .TwofoldIntervalArithmetic: inner, outer
 
 """
     TwofoldIntervalWeightVector(

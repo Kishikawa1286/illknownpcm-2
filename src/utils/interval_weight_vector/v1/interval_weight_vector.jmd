@@ -1,6 +1,7 @@
 # IntervalWeightVector
 
 ```julia
+import Base: ∈, ∋
 using IntervalArithmetic
 using IntervalArithmetic.Symbols
 
