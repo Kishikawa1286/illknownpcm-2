@@ -63,6 +63,8 @@ $$
     0 & \text{if } A \neq \emptyset ~ \text{ and } ~ B = \emptyset, \\
     0 & \text{if } A \cap B = \emptyset
         ~ \text{ and } ~ A \neq \emptyset ~ \text{ and } ~ B \neq \emptyset, \\
+    1 & \text{if } A = B \\
+        ~ \text{ and } ~ A \neq \emptyset ~ \text{ and } ~ B \neq \emptyset, \\
     \frac{\| A \cap B \|}{\| A \|} & \text{otherwise}.
 \end{dcases}
 $$
@@ -73,11 +75,25 @@ $$
 
 Calculate the degree of A in B.
 """
-function Inc(A::Interval, B::Interval)::Real
+function Inc(
+    A::Interval,
+    B::Interval;
+    strict::Bool = false,
+)::Real
+    tolerance = strict ? 1e-10 : 1e-6
+
     if !iscommon(A) return 1 end
     if !iscommon(B) return 0 end
     if !iscommon(intersect_interval(A, B))
         return 0
+    end
+
+    aᴸ = inf(A); aᵁ = sup(A)
+    bᴸ = inf(B); bᵁ = sup(B)
+
+    if isNearlyEqual(aᴸ, bᴸ; tolerance=tolerance) &&
+       isNearlyEqual(aᵁ, bᵁ; tolerance=tolerance)
+        return 1
     end
 
     return diam(intersect_interval(A, B)) / diam(A)

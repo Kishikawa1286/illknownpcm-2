@@ -13,6 +13,10 @@ using .CrispPCM
 include("../../interval_weight_vector/v1/interval_weight_vector.jl")
 using .IntervalWeightVector
 import .IntervalWeightVector: ∈, ∋
+
+include("../../interval/v1/interval.jl")
+using .ExtendedIntervalArithmetic
+import .ExtendedIntervalArithmetic: Sim, Inc
 ```
 
 ## 区間 PCM の定義
@@ -150,6 +154,100 @@ Unicode alias for `isincluded(A, B)`.
 
 ```julia
 export isincluded, ∈, ∋
+```
+
+## 区間 PCM の類似度
+
+区間 PCM $A, B$ の類似度 $\operatorname{Sim}^\mathrm{M}(A, B)$ は
+区間の類似度 $\operatorname{Sim}(a_{ij}, b_{ij})$ の算術平均として定める.
+
+$$
+\operatorname{Sim}^\mathrm{M}(A, B)
+= \frac{2}{n(n-1)} \sum_{i, j \in N, i < j} \operatorname{Sim}(a_{ij}, b_{ij})
+$$
+
+```julia
+"""
+    Sim(A, B)
+
+Calculate the similarity between the given interval PCMs `A` and `B`.
+Throws an `ArgumentError` if `A` is not an interval PCM or `B` is not an interval PCM.
+Throws a `DimensionMismatch` if the dimensions of `A` and `B` do not match.
+"""
+function Sim(
+    A::Matrix{Interval{T}},
+    B::Matrix{Interval{T}}
+)::Real where {T <: Real}
+    if !isIntervalPCM(A; allow_uncommon=true)
+        throw(ArgumentError("The given matrix A is not an interval PCM."))
+    end
+    if !isIntervalPCM(B; allow_uncommon=true)
+        throw(ArgumentError("The given matrix B is not an interval PCM."))
+    end
+    if size(A) != size(B)
+        throw(DimensionMismatch("The dimensions of the given matrices do not match."))
+    end
+
+    n = size(A, 1)
+    sum = zero(T)
+    for i = 1:n, j = 1:n
+        if i >= j continue end
+        Aᵢⱼ = A[i,j]; Bᵢⱼ = B[i,j]
+        sum += Sim(Aᵢⱼ, Bᵢⱼ)
+    end
+
+    return 2 / (n * (n - 1)) * sum
+end
+```
+
+```julia
+export Sim
+```
+
+## 区間 PCM の包含度
+
+区間 PCM $A, B$ の包含度 $\operatorname{Inc}^\mathrm{M}(A, B)$ は
+区間の包含度 $\operatorname{Inc}(a_{ij}, b_{ij})$ の算術平均として定める.
+
+$$
+\operatorname{Inc}^\mathrm{M}(A, B)
+= \frac{2}{n(n-1)} \sum_{i, j \in N, i < j} \operatorname{Inc}(a_{ij}, b_{ij})
+$$
+
+```julia
+"""
+    Inc(A, B)
+
+Calculate the degree of A in B.
+"""
+function Inc(
+    A::Matrix{Interval{T}},
+    B::Matrix{Interval{T}}
+)::Real where {T <: Real}
+    if !isIntervalPCM(A; allow_uncommon=true)
+        throw(ArgumentError("The given matrix A is not an interval PCM."))
+    end
+    if !isIntervalPCM(B; allow_uncommon=true)
+        throw(ArgumentError("The given matrix B is not an interval PCM."))
+    end
+    if size(A) != size(B)
+        throw(DimensionMismatch("The dimensions of the given matrices do not match."))
+    end
+
+    n = size(A, 1)
+    sum = zero(T)
+    for i = 1:n, j = 1:n
+        if i >= j continue end
+        Aᵢⱼ = A[i,j]; Bᵢⱼ = B[i,j]
+        sum += Inc(Aᵢⱼ, Bᵢⱼ)
+    end
+
+    return 2 / (n * (n - 1)) * sum
+end
+```
+
+```julia
+export Inc
 ```
 
 ## ユーティリティ関数

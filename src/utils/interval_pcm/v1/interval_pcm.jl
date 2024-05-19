@@ -16,6 +16,10 @@ include("../../interval_weight_vector/v1/interval_weight_vector.jl")
 using .IntervalWeightVector
 import .IntervalWeightVector: ∈, ∋
 
+include("../../interval/v1/interval.jl")
+using .ExtendedIntervalArithmetic
+import .ExtendedIntervalArithmetic: Sim, Inc
+
 """
     isIntervalPCM(A; allow_uncommon=false)
 
@@ -125,6 +129,72 @@ Unicode alias for `isincluded(A, B)`.
 ∋(B::Matrix{Interval}, A::Matrix)::Bool = isincluded(A, B)
 
 export isincluded, ∈, ∋
+
+"""
+    Sim(A, B)
+
+Calculate the similarity between the given interval PCMs `A` and `B`.
+Throws an `ArgumentError` if `A` is not an interval PCM or `B` is not an interval PCM.
+Throws a `DimensionMismatch` if the dimensions of `A` and `B` do not match.
+"""
+function Sim(
+    A::Matrix{Interval{T}},
+    B::Matrix{Interval{T}}
+)::Real where {T <: Real}
+    if !isIntervalPCM(A; allow_uncommon=true)
+        throw(ArgumentError("The given matrix A is not an interval PCM."))
+    end
+    if !isIntervalPCM(B; allow_uncommon=true)
+        throw(ArgumentError("The given matrix B is not an interval PCM."))
+    end
+    if size(A) != size(B)
+        throw(DimensionMismatch("The dimensions of the given matrices do not match."))
+    end
+
+    n = size(A, 1)
+    sum = zero(T)
+    for i = 1:n, j = 1:n
+        if i >= j continue end
+        Aᵢⱼ = A[i,j]; Bᵢⱼ = B[i,j]
+        sum += Sim(Aᵢⱼ, Bᵢⱼ)
+    end
+
+    return 2 / (n * (n - 1)) * sum
+end
+
+export Sim
+
+"""
+    Inc(A, B)
+
+Calculate the degree of A in B.
+"""
+function Inc(
+    A::Matrix{Interval{T}},
+    B::Matrix{Interval{T}}
+)::Real where {T <: Real}
+    if !isIntervalPCM(A; allow_uncommon=true)
+        throw(ArgumentError("The given matrix A is not an interval PCM."))
+    end
+    if !isIntervalPCM(B; allow_uncommon=true)
+        throw(ArgumentError("The given matrix B is not an interval PCM."))
+    end
+    if size(A) != size(B)
+        throw(DimensionMismatch("The dimensions of the given matrices do not match."))
+    end
+
+    n = size(A, 1)
+    sum = zero(T)
+    for i = 1:n, j = 1:n
+        if i >= j continue end
+        Aᵢⱼ = A[i,j]; Bᵢⱼ = B[i,j]
+        sum += Inc(Aᵢⱼ, Bᵢⱼ)
+    end
+
+    return 2 / (n * (n - 1)) * sum
+end
+
+export Inc
 
 """
     intervalPCM(W)
