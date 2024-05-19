@@ -1,0 +1,15 @@
+# ExtendedIntervalArithmetic
+
+## 区間の類似度
+
+$A, B$ を区間とし, $\|A\|$ を区間 $A$ の幅とする.
+このとき, 区間 $A, B$ の類似度 $\operatorname{Sim}(A, B)$ を次のように定義する.
+
+$$
+\operatorname{Sim}(A, B) = \begin{dcases}
+    1 & \text{if } A = B, \\
+    0 & \text{if } A \cap B = \emptyset ~ \text{ and } ~
+        A \neq \emptyset ~ \text{ and } ~ B \neq \emptyset, \\
+    \frac{\| A \cap B \|}{\| A \cup B \|} & \text{otherwise}.
+\end{dcases}
+$$
