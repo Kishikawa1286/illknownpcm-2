@@ -1,5 +1,13 @@
 # ExtendedIntervalArithmetic
 
+```julia
+using IntervalArithmetic
+using IntervalArithmetic.Symbols
+
+include("../../nearly_equal/v1/nearly_equal.jl")
+using .NearlyEqual
+```
+
 ## 区間の類似度
 
 $A, B$ を区間とし, $\|A\|$ を区間 $A$ の幅とする.
@@ -9,7 +17,73 @@ $$
 \operatorname{Sim}(A, B) = \begin{dcases}
     1 & \text{if } A = B, \\
     0 & \text{if } A \cap B = \emptyset ~ \text{ and } ~
-        A \neq \emptyset ~ \text{ and } ~ B \neq \emptyset, \\
+        (A \neq \emptyset ~ \text{ or } ~ B \neq \emptyset), \\
     \frac{\| A \cap B \|}{\| A \cup B \|} & \text{otherwise}.
 \end{dcases}
 $$
+
+```julia
+"""
+	Sim(A, B; strict::Bool = false)
+
+Calculate the similarity between two intervals A and B.
+"""
+function Sim(
+    A::Interval,
+    B::Interval;
+    strict::Bool = false,
+)::Real
+    tolerance = strict ? 1e-10 : 1e-6
+
+    aᴸ = inf(A); aᵁ = sup(A)
+    bᴸ = inf(B); bᵁ = sup(B)
+
+    if isNearlyEqual(aᴸ, bᴸ; tolerance=tolerance) &&
+       isNearlyEqual(aᵁ, bᵁ; tolerance=tolerance)
+        return 1
+    end
+    if !iscommon(intersect_interval(A, B)) return 0 end
+
+    return diam(intersect_interval(A, B)) / diam(hull(A, B))
+end
+```
+
+```julia
+export Sim
+```
+
+## 区間の包含度
+
+$A, B$ を区間とし, $\|A\|$ を区間 $A$ の幅とする.
+このとき, 区間 $A$ が区間 $B$ にどの程度含まれるかの度合い $\operatorname{Inc}(A, B)$ を次のように定義する.
+
+$$
+\operatorname{Inc}(A, B) = \begin{dcases}
+    1 & \text{if } A = \emptyset, \\
+    0 & \text{if } A \neq \emptyset ~ \text{ and } ~ B = \emptyset, \\
+    0 & \text{if } A \cap B = \emptyset
+        ~ \text{ and } ~ A \neq \emptyset ~ \text{ and } ~ B \neq \emptyset, \\
+    \frac{\| A \cap B \|}{\| A \|} & \text{otherwise}.
+\end{dcases}
+$$
+
+```julia
+"""
+    Inc(A, B)
+
+Calculate the degree of A in B.
+"""
+function Inc(A::Interval, B::Interval)::Real
+    if !iscommon(A) return 1 end
+    if !iscommon(B) return 0 end
+    if !iscommon(intersect_interval(A, B))
+        return 0
+    end
+
+    return diam(intersect_interval(A, B)) / diam(A)
+end
+```
+
+```julia
+export Inc
+```

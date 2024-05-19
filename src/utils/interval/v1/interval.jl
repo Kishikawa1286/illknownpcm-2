@@ -3,4 +3,61 @@
 
 module ExtendedIntervalArithmetic
 
+using IntervalArithmetic
+using IntervalArithmetic.Symbols
+
+include("../../nearly_equal/v1/nearly_equal.jl")
+using .NearlyEqual
+
+"""
+	Sim(A, B; strict::Bool = false)
+
+Calculate the similarity between two intervals A and B.
+"""
+function Sim(
+    A::Interval,
+    B::Interval;
+    strict::Bool=false,
+)::Real
+    tolerance = strict ? 1e-10 : 1e-6
+
+    aᴸ = inf(A)
+    aᵁ = sup(A)
+    bᴸ = inf(B)
+    bᵁ = sup(B)
+
+    if isNearlyEqual(aᴸ, bᴸ; tolerance=tolerance) &&
+       isNearlyEqual(aᵁ, bᵁ; tolerance=tolerance)
+        return 1
+    end
+    if !iscommon(intersect_interval(A, B))
+        return 0
+    end
+
+    return diam(intersect_interval(A, B)) / diam(hull(A, B))
+end
+
+export Sim
+
+"""
+    Inc(A, B)
+
+Calculate the degree of A in B.
+"""
+function Inc(A::Interval, B::Interval)::Real
+    if !iscommon(A)
+        return 1
+    end
+    if !iscommon(B)
+        return 0
+    end
+    if !iscommon(intersect_interval(A, B))
+        return 0
+    end
+
+    return diam(intersect_interval(A, B)) / diam(A)
+end
+
+export Inc
+
 end

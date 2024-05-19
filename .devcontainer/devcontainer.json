@@ -10,11 +10,16 @@
 			"extensions": [
 				"ms-toolsai.jupyter",
 				"julialang.language-julia",
-                "0h7z.vscode-julia-format"
+				"0h7z.vscode-julia-format",
+				"jameselderfield.language-weave"
 			],
 			"settings": {
 				"terminal.integrated.shell": "/bin/bash",
-				"jupyter.experiments.optOutFrom": ["NativeNotebookEditor"]
+				"jupyter.experiments.optOutFrom": ["NativeNotebookEditor"],
+				"[julia]": {
+					"editor.defaultFormatter": "0h7z.vscode-julia-format",
+					"editor.formatOnSave": true
+				}
 			}
 		}
 	}
