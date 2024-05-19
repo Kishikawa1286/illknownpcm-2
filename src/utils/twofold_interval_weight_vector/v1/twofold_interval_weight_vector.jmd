@@ -1,0 +1,128 @@
+# TwofoldIntervalWeightVector
+
+```julia
+import Base: ∈, ∋
+using IntervalArithmetic
+
+include("../../nearly_equal/v1/nearly_equal.jl")
+using .NearlyEqual
+
+include("../../twofold_interval/v1/twofold_interval.jl")
+using .TwofoldIntervalArithmetic
+```
+
+## 二重区間重要度ベクトルの定義
+
+$$
+\mathscr{W} = \left( \left( \mathscr{W}_i^-, \mathscr{W}_i^+ \right) \right)_n
+= \left( \left(
+    \left[ w_i^{\mathrm{L}-}, w_i^{\mathrm{U}-} \right],
+    \left[ w_i^{\mathrm{L}+}, w_i^{\mathrm{U}+} \right]
+\right) \right)_n
+$$
+
+- $n$ 次元ベクトル
+- $w_i^{\mathrm{L}+} > 0, ~~ i \in N$
+- $\mathscr{W}_i^- \subseteq \mathscr{W}_i^+, ~~ i \in N$
+
+```julia
+"""
+    TwofoldIntervalWeightVector(
+        𝒲;
+        allow_uncommon_inner_interval=true,
+        strict=false
+    )
+
+Check whether `𝒲` is a twofold interval weight vector or not.
+"""
+@inline function isTwofoldIntervalWeightVector(
+    𝒲::Vector{TwofoldInterval{T}};
+    allow_uncommon_inner_interval=true,
+    strict=false
+)::Bool where {T <: Real}
+    n = length(𝒲)
+    for i in 1:n
+        𝒲ᵢ = 𝒲[i]
+        if !isTwofoldInterval(
+            𝒲ᵢ;
+            allow_uncommon_inner_interval=allow_uncommon_inner_interval,
+            strict=strict
+        ) return false end
+    end
+    return true
+end
+```
+
+## 区間重要度ベクトルが二重区間重要度ベクトルに含まれるかどうかの判定
+
+$W = \left( W_i \right)_n$ を区間重要度ベクトル、$\mathscr{W} = \left( \left( \mathscr{W}_i^-, \mathscr{W}_i^+ \right) \right)_n$ を二重区間重要度ベクトルとする。
+
+$$
+\mathscr{W}_i^- \subseteq W_i \subseteq \mathscr{W}_i^+, ~~ i \in N
+$$
+
+```julia
+"""
+    isincluded(W, 𝒲; strict=false)
+
+Check whether interval vector `W` is included in twofold interval vector `𝒲`.
+"""
+function isincluded(
+    W::Vector{Interval{T}},
+    𝒲::Vector{TwofoldInterval{T}};
+    strict=false
+)::Bool where {T <: Real}
+    n = length(W)
+
+    for i = 1:n
+        Wᵢ = W[i]; 𝒲ᵢ = 𝒲[i]
+        if !isincluded(Wᵢ, 𝒲ᵢ; strict=strict)
+            return false
+        end
+    end
+
+    return true
+end
+```
+
+```julia
+"""
+    ∈(W, 𝒲)
+
+Unicode alias for `isincluded(W, 𝒲)`.
+"""
+∈(W::Vector{Interval}, 𝒲::Vector{TwofoldInterval})::Bool = isincluded(W, 𝒲)
+```
+
+```julia
+"""
+    ∋(𝒲, W)
+
+Unicode alias for `isincluded(W, 𝒲)`.
+"""
+∋(W::Vector{Interval}, 𝒲::Vector{TwofoldInterval})::Bool = isincluded(W, 𝒲)
+```
+
+## ユーティリティ関数
+
+```julia
+"""
+    inner(𝒲)
+
+Get the inner intervals of twofold interval vector `𝒲`.
+"""
+function inner(𝒲::Vector{TwofoldInterval})::Vector{Interval}
+    return [inner(𝒲ᵢ) for 𝒲ᵢ in 𝒲]
+end
+```
+
+```julia
+"""
+    outer(𝒲)
+
+Get the outer intervals of twofold interval vector `𝒲`.
+"""
+function outer(𝒲::Vector{TwofoldInterval})::Vector{Interval}
+    return [outer(𝒲ᵢ) for 𝒲ᵢ in 𝒲]
+end
+```

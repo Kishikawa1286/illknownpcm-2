@@ -118,12 +118,12 @@ Unicode alias for `isIntervalPCMContainingCrispPCM(A, B)`.
 ∋(B::Matrix{Interval}, A::Matrix)::Bool = isIntervalPCMContainingCrispPCM(A, B)
 
 """
-    PCM(W)
+    intervalPCM(W)
 
 Generate an interval PCM from the interval weight vector `W`.
 Throws an `ArgumentError` if `W` is not an interval weight vector.
 """
-function PCM(
+function intervalPCM(
     W::Vector{Interval{T}}
 )::Matrix{Interval{T}} where {T <: Real}
     if !isIntervalWeightVector(W)
@@ -150,6 +150,6 @@ function PCM(
     return A
 end
 
-export isIntervalPCM, isIntervalPCMContainingCrispPCM, ∈, ∋, PCM
+export isIntervalPCM, isIntervalPCMContainingCrispPCM, ∈, ∋, intervalPCM
 
 end

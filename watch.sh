@@ -16,7 +16,7 @@ run_task() {
         
         # Check for spaces in the module name
         if [[ "$module_name" =~ \  ]]; then
-            echo "Error: Module name '$module_name' contains spaces. Skipping $jmd_file."
+            echo "Error: Module name (h1) '$module_name' contains spaces. Skipping $jmd_file."
             continue
         fi
 

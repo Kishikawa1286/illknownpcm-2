@@ -1,6 +1,7 @@
 # TwofoldIntervalArithmetic
 
 ```julia
+import Base: ∈, ∋, ⊆, ⊇
 using IntervalArithmetic
 using IntervalArithmetic.Symbols
 
@@ -63,6 +64,147 @@ Check whether `A` is a twofold interval.
 end
 ```
 
+```julia
+export TwofoldInterval, isTwofoldInterval
+```
+
+## 区間が二重区間に含まれるかどうかの判定
+
+$A$ を区間, $\mathscr{A}$ を二重区間とする.
+
+$$
+\mathscr{A}^- \subseteq A \subseteq \mathscr{A}^+
+$$
+
+```julia
+"""
+    isincluded(A, 𝒜; strict=false)
+
+Check whether `A` is included in `𝒜`.
+Throw an `ArgumentError` if `𝒜` is not a twofold interval.
+"""
+@inline function isincluded(
+    A::Interval{T},
+    𝒜::TwofoldInterval{T};
+    strict::Bool=false
+)::Bool where {T <: Real}
+    if !isTwofoldInterval(𝒜; strict=strict)
+        throw(ArgumentError("𝒜 is not a twofold interval"))
+    end
+
+    tolerance = strict ? 1e-10 : 1e-6
+
+    𝒜⁻ = inner(𝒜); 𝒜⁺ = outer(𝒜)
+    aᴸ = inf(A); aᵁ = sup(A)
+    αᴸ⁻ = inf(𝒜⁻); αᵁ⁻ = sup(𝒜⁻)
+    αᴸ⁺ = inf(𝒜⁺); αᵁ⁺ = sup(𝒜⁺)
+
+    if αᴸ⁺ ≤ aᴸ ≤ αᴸ⁻ &&
+       αᵁ⁻ ≤ aᵁ ≤ αᵁ⁺
+        return true
+    end
+
+    if (isNearlyEqual(aᴸ, αᴸ⁺; tolerance=tolerance) ||
+            isNearlyEqual(aᴸ, αᴸ⁻; tolerance=tolerance)) &&
+       (isNearlyEqual(aᵁ, αᵁ⁺; tolerance=tolerance) ||
+            isNearlyEqual(aᵁ, αᵁ⁻; tolerance=tolerance))
+        return true
+    end
+
+    return false
+end
+```
+
+```julia
+"""
+    ∈(A, 𝒜)
+
+Unicode alias for `isincluded(A, 𝒜)`.
+"""
+∈(A::Interval, 𝒜::TwofoldInterval)::Bool = isincluded(A, 𝒜)
+```
+
+```julia
+"""
+    ∋(𝒜, A)
+
+Unicode alias for `isincluded(A, 𝒜)`.
+"""
+∋(𝒜::TwofoldInterval, A::Interval)::Bool = isincluded(A, 𝒜)
+```
+
+```julia
+export isincluded, ∈, ∋
+```
+
+## 二重区間が二重区間に含まれるかどうかの判定
+
+$\mathscr{A}, \mathscr{B}$ を二重区間とする.
+
+$$
+\mathscr{A}_{ij}^- \supseteq \mathscr{B}_{ij}^-
+~~ \text{ and } ~~
+\mathscr{A}_{ij}^+ \subseteq \mathscr{B}_{ij}^+
+~~ i, j \in N
+$$
+
+```julia
+"""
+    isincluded(𝒜, ℬ; strict=false)
+
+Check whether `𝒜` is included in `ℬ`.
+Throw an `ArgumentError` if `𝒜` and `ℬ` is not a twofold interval.
+"""
+@inline function isincluded(
+    𝒜::TwofoldInterval{T},
+    ℬ::TwofoldInterval{T};
+    strict::Bool=false
+)::Bool where {T <: Real}
+    if !isTwofoldInterval(𝒜; strict=strict)
+        throw(ArgumentError("𝒜 is not a twofold interval"))
+    end
+    if !isTwofoldInterval(ℬ; strict=strict)
+        throw(ArgumentError("ℬ is not a twofold interval"))
+    end
+
+    tolerance = strict ? 1e-10 : 1e-6
+
+    𝒜⁻ = inner(𝒜); 𝒜⁺ = outer(𝒜)
+    αᴸ⁻ = inf(𝒜⁻); αᵁ⁻ = sup(𝒜⁻)
+    αᴸ⁺ = inf(𝒜⁺); αᵁ⁺ = sup(𝒜⁺)
+    ℬ⁻ = inner(ℬ); ℬ⁺ = outer(ℬ)
+    βᴸ⁻ = inf(ℬ⁻); βᵁ⁻ = sup(ℬ⁻)
+    βᴸ⁺ = inf(ℬ⁺); βᵁ⁺ = sup(ℬ⁺)
+
+    if (βᴸ⁺ ≤ αᴸ⁺ || isNearlyEqual(βᴸ⁺, αᴸ⁺; tolerance=tolerance)) &&
+        (αᴸ⁻ ≤ βᴸ⁻ || isNearlyEqual(αᴸ⁻, βᴸ⁻; tolerance=tolerance)) &&
+        (βᵁ⁻ ≤ αᵁ⁻ || isNearlyEqual(βᵁ⁻, αᵁ⁻; tolerance=tolerance)) &&
+        (αᵁ⁺ ≤ βᵁ⁺ || isNearlyEqual(αᵁ⁺, βᵁ⁺; tolerance=tolerance))
+        return true
+    end
+
+    return false
+end
+```
+
+```julia
+"""
+    ⊆(𝒜, ℬ)
+
+Unicode alias for `isincluded(𝒜, ℬ)`.
+"""
+⊆(𝒜::TwofoldInterval, ℬ::TwofoldInterval)::Bool = isincluded(𝒜, ℬ)
+```
+
+```julia
+"""
+    ⊇(ℬ, 𝒜)
+
+Unicode alias for `isincluded(𝒜, ℬ)`.
+"""
+⊇(ℬ::TwofoldInterval, 𝒜::TwofoldInterval)::Bool = isincluded(𝒜, ℬ)
+```
+
 ## ユーティリティ関数
 
 ```julia
@@ -84,5 +226,5 @@ outer(A::TwofoldInterval)::Interval = A[2]
 ```
 
 ```julia
-export TwofoldInterval, isTwofoldInterval, inner, outer
+export inner, outer
 ```

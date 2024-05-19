@@ -236,12 +236,12 @@ end
 
 ```julia
 """
-    createTwofoldIntervalMatrix(𝒜⁻, 𝒜⁺)
+    twofoldIntervalMatrix(𝒜⁻, 𝒜⁺)
 
 Create a twofold interval matrix from the inner and outer interval matrices.
 Given the two interval matrices must have the same size.
 """
-function createTwofoldIntervalMatrix(
+function twofoldIntervalMatrix(
     𝒜⁻::Matrix{Interval{T}},
     𝒜⁺::Matrix{Interval{T}}
 )::Matrix{TwofoldInterval{T}} where {T <: Real}
@@ -262,12 +262,12 @@ end
 
 ```julia
 """
-    createTwofoldIntervalPCM(𝒜⁻, 𝒜⁺)
+    twofoldIntervalPCM(𝒜⁻, 𝒜⁺)
 
 Create a twofold interval PCM from the inner and outer interval matrices.
 Throw an `ArgumentError` if the given matrices `𝒜⁻` and `𝒜⁺` are not interval PCMs.
 """
-function createTwofoldIntervalPCM(
+function twofoldIntervalPCM(
     𝒜⁻::Matrix{Interval{T}},
     𝒜⁺::Matrix{Interval{T}}
 )::Matrix{TwofoldInterval{T}} where {T <: Real}
@@ -278,7 +278,7 @@ function createTwofoldIntervalPCM(
         throw(ArgumentError("𝒜⁺ must be an interval PCM."))
     end
 
-    𝒜 = createTwofoldIntervalMatrix(𝒜⁻, 𝒜⁺)
+    𝒜 = twofoldIntervalMatrix(𝒜⁻, 𝒜⁺)
     if !isTwofoldIntervalPCM(𝒜)
     # Failed calculation
         throw(ErrorException("Failed to create a twofold interval PCM."))
@@ -289,5 +289,5 @@ end
 ```
 
 ```julia
-export isTwofoldIntervalPCM, inner, outer, isTwofoldIntervalPCMContainingIntervalPCM, ∈, ∋, createTwofoldIntervalMatrix, createTwofoldIntervalPCM
+export isTwofoldIntervalPCM, inner, outer, isTwofoldIntervalPCMContainingIntervalPCM, ∈, ∋, twofoldIntervalMatrix, twofoldIntervalPCM
 ```
