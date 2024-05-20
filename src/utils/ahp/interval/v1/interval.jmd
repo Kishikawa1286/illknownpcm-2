@@ -24,7 +24,7 @@ $$
 
 ```julia
 """
-	Sim(A, B; strict::Bool = false)
+    Sim(A, B; strict::Bool = false)
 
 Calculate the similarity between two intervals A and B.
 """
