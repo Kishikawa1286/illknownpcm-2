@@ -1,8 +1,6 @@
 {
     "name": "Ubuntu",
-    "dockerComposeFile": "docker-compose.yml",
-    "service": "devcontainer",
-    "workspaceFolder": "/workspace",
+    "image": "jupyter/datascience-notebook:julia-1.9.3",
     "features": {
         "ghcr.io/devcontainers/features/common-utils:2": {}
     },
