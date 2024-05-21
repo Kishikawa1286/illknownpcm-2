@@ -10,7 +10,8 @@
             "extensions": [
                 "ms-toolsai.jupyter",
                 "julialang.language-julia",
-                "jameselderfield.language-weave"
+                "jameselderfield.language-weave",
+                "qwtel.sqlite-viewer"
             ],
             "settings": {
                 "terminal.integrated.shell": "/bin/bash",
