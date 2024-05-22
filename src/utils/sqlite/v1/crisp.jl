@@ -5,39 +5,8 @@ using Tables
 using SQLite
 using JSON3
 
-crispDataSchema = Tables.Schema(
-    [:id, :type, :rows, :cols, :data],
-    [String, String, Int, Int, String]
-)
-
-"""
-    createCrispDataTable!(db, tableName)
-
-Create a Crisp table with the given name in the database.
-"""
-createCrispDataTable(
-    db::SQLite.DB,
-    tableName::AbstractString
-) = SQLite.createtable!(db, tableName, crispDataSchema)
-
-export createCrispDataTable
-
-queryCrispDataInsert(
-    db::SQLite.DB,
-    tableName::AbstractString,
-    id::String,
-    type::String,
-    rows::Int,
-    cols::Int,
-    data::String
-) = DBInterface.execute(
-    db,
-    """
-    INSERT INTO $tableName (id, type, rows, cols, data)
-    VALUES (?, ?, ?, ?, ?)
-    """,
-    (id, type, rows, cols, data)
-)
+include("sqlite.jl")
+using .SQLiteHelper
 
 """
     insertCrispData(db, tableName, id, data)
@@ -47,12 +16,12 @@ Insert a crisp matrix or vector into the table.
 function insertCrispData(
     db::SQLite.DB,
     tableName::AbstractString,
-    id::String,
+    id::AbstractString,
     data::AbstractMatrix{T}
 ) where {T<:Real}
     float64Data = convert(Matrix{Float64}, data)
     jsonData = JSON3.write(float64Data)
-    return queryCrispDataInsert(
+    return queryMatrixDataInsert(
         db,
         tableName,
         id,
@@ -66,12 +35,12 @@ end
 function insertCrispData(
     db::SQLite.DB,
     tableName::AbstractString,
-    id::String,
+    id::AbstractString,
     data::AbstractVector{T}
 ) where {T<:Real}
     float64Data = convert(Vector{Float64}, data)
     jsonData = JSON3.write(float64Data)
-    return queryCrispDataInsert(
+    return queryMatrixDataInsert(
         db,
         tableName,
         id,
@@ -84,25 +53,6 @@ end
 
 export insertCrispData
 
-queryCrispDataSelect(
-    db::SQLite.DB,
-    tableName::AbstractString,
-    id::String
-) = begin
-    df = DBInterface.execute(
-        db,
-        """
-        SELECT * FROM $tableName
-        WHERE id = ?
-        """,
-        (id,)
-    ) |> DataFrame
-    if nrow(df) == 0
-        throw(ArgumentError("ID not found: $id"))
-    end
-    return df[1, :]
-end
-
 """
     getCrispData(db, tableName, id)
 
@@ -112,14 +62,15 @@ Throws an `ArgumentError` if the document does not exist.
 function getCrispData(
     db::SQLite.DB,
     tableName::AbstractString,
-    id::String
+    id::AbstractString
 )::Union{
     AbstractMatrix{Float64},
     AbstractVector{Float64}
 }
-    data = queryCrispDataSelect(db, tableName, id)
+    data = queryMatrixDataSelect(db, tableName, id)
     type = data[2]
     jsonData = data[5]
+
     if type == "crisp_matrix"
         rows = data[3]
         cols = data[4]
