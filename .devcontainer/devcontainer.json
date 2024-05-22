@@ -1,10 +1,11 @@
 {
     "name": "Ubuntu",
-    "image": "jupyter/datascience-notebook:julia-1.9.3",
+    "build": {
+        "dockerfile": "./Dockerfile"
+    },
     "features": {
         "ghcr.io/devcontainers/features/common-utils:2": {}
     },
-    "postCreateCommand": "julia ./.devcontainer/init.jl",
     "customizations": {
         "vscode": {
             "extensions": [
