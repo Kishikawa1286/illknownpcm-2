@@ -20,7 +20,7 @@ const S = 9
 function generateCrispPCM(
     n::Int
 )::Matrix{Float64}
-    A = Matrix{Float64}(undef, n, n)
+    A = Matrix(undef, n, n)
 
     for i in 1:n
         for j in i:n
@@ -29,7 +29,7 @@ function generateCrispPCM(
                 continue
             end
 
-            aᵢⱼ = exp(rand(Uniform(log(1 / S), log(S))))
+            aᵢⱼ = exp(rand(Uniform(log(1/S), log(S))))
             A[i, j] = aᵢⱼ
             A[j, i] = 1 / aᵢⱼ
         end
@@ -40,16 +40,12 @@ end
 
 function generateConsistentCrispPCM(
     n::Int;
-    max_iter::Int=1000
+    max_iter::Int = 10000
 )::Matrix{Float64}
     for _ in 1:max_iter
         A = generateCrispPCM(n)
-        if !isCrispPCM(A)
-            continue
-        end
-        if CR(A) ≥ 0.1
-            continue
-        end
+        if !isCrispPCM(A) continue end
+        if CR(A) ≥ 0.1 continue end
         return A
     end
 
@@ -58,7 +54,7 @@ end
 
 function generateIntervalPCM(
     A::Matrix{T}
-)::Matrix{Interval{T}} where {T<:Real}
+)::Matrix{Interval{T}} where {T <: Real}
     if !isCrispPCM(A)
         error("The input matrix is not a crisp PCM")
     end
@@ -68,15 +64,17 @@ function generateIntervalPCM(
     for i in 1:n
         for j in i:n
             if i == j
-                B[i, j] = 1 .. 1
+                B[i, j] = 1..1
                 continue
             end
 
             aᵢⱼ = A[i, j]
-            rᵢⱼᴸ = rand(Uniform(1e-8, log(7) / 2))
-            rᵢⱼᵁ = rand(Uniform(1e-8, log(7) / 2))
-            B[i, j] = (aᵢⱼ * exp(-rᵢⱼᴸ)) .. (aᵢⱼ * exp(rᵢⱼᵁ))
-            B[j, i] = (1 / sup(B[i, j])) .. (1 / inf(B[i, j]))
+            rᵢⱼᴸ = rand(Uniform(1e-8, log(7)/2))
+            rᵢⱼᵁ = rand(Uniform(1e-8, log(7)/2))
+            bᵢⱼᴸ = aᵢⱼ * exp(-rᵢⱼᴸ)
+            bᵢⱼᵁ = aᵢⱼ * exp(rᵢⱼᵁ)
+            B[i, j] = bᵢⱼᴸ..bᵢⱼᵁ
+            B[j, i] = (1 / bᵢⱼᵁ)..(1 / bᵢⱼᴸ)
         end
     end
 
@@ -87,7 +85,7 @@ function generateIntervalPCM(
     return B
 end
 
-function discritize(a::T)::T where {T<:Real}
+function discritize(a::T)::T where {T <: Real}
     sorted_scale = sort(vcat(1 ./ (S:-1:2), [1], 2:S))
     boundaries = [sqrt(sorted_scale[i] * sorted_scale[i+1]) for i in 1:length(sorted_scale)-1]
 
@@ -102,7 +100,7 @@ end
 
 function discritize(
     A::Matrix{Interval{T}}
-)::Matrix{Interval{T}} where {T<:Real}
+)::Matrix{Interval{T}} where {T <: Real}
     if !isIntervalPCM(A)
         error("The input matrix is not an interval PCM")
     end
@@ -112,15 +110,15 @@ function discritize(
 
     for i = 1:n, j = i:n
         if i == j
-            B[i, j] = 1 .. 1
+            B[i, j] = 1..1
             continue
         end
 
         aᵢⱼ = A[i, j]
         aᵢⱼᴸ = discritize(inf(aᵢⱼ))
         aᵢⱼᵁ = discritize(sup(aᵢⱼ))
-        B[i, j] = aᵢⱼᴸ .. aᵢⱼᵁ
-        B[j, i] = (1 / aᵢⱼᵁ) .. (1 / aᵢⱼᴸ)
+        B[i, j] = aᵢⱼᴸ..aᵢⱼᵁ
+        B[j, i] = (1 / aᵢⱼᵁ)..(1 / aᵢⱼᴸ)
     end
 
     return B
@@ -142,10 +140,10 @@ function generateIntervalPCMSet(;
     Threads.@threads for i in 1:sample_size
         try
             crisp_pcm = generateConsistentCrispPCM(n)
-            interval_pcm_samples = [discritize(generateIntervalPCM(crisp_pcm)) for _ in 1:M]
+            interval_pcm_samples = [generateIntervalPCM(crisp_pcm) for _ in 1:M]
             callback(interval_pcm_samples, i)
         catch e
-            println("Error occurred in iteration $i: ", e)
+            println("Error occurred in $i-th iteration: ", e)
         end
     end
 end

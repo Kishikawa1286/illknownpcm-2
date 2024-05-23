@@ -93,4 +93,24 @@ end
 
 export getMatrixIds
 
+"""
+    getSampleIds(db, tableName)
+
+Get the ids of all samples in the table.
+"""
+function getSampleIds(
+    db::SQLite.DB,
+    tableName::AbstractString
+)::Vector{AbstractString}
+    df = DBInterface.execute(
+        db,
+        """
+        SELECT id FROM $tableName
+        """
+    ) |> DataFrame
+    return df.id
+end
+
+export getSampleIds
+
 end

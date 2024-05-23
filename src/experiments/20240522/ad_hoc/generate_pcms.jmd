@@ -32,7 +32,7 @@ const S = 9
 ```julia
 function generateCrispPCM(
     n::Int
-)::Matrix
+)::Matrix{Float64}
     A = Matrix(undef, n, n)
 
     for i in 1:n
@@ -55,8 +55,8 @@ end
 ```julia
 function generateConsistentCrispPCM(
     n::Int;
-    max_iter::Int = 1000
-)::Matrix
+    max_iter::Int = 10000
+)::Matrix{Float64}
     for _ in 1:max_iter
         A = generateCrispPCM(n)
         if !isCrispPCM(A) continue end
@@ -99,10 +99,12 @@ function generateIntervalPCM(
             end
 
             aᵢⱼ = A[i, j]
-            rᵢⱼᴸ = rand(Uniform(-log(7)/2, log(7)/2))
-            rᵢⱼᵁ = rand(Uniform(-log(7)/2, log(7)/2))
-            B[i, j] = (aᵢⱼ * exp(-rᵢⱼᴸ))..(aᵢⱼ * exp(rᵢⱼᵁ))
-            B[j, i] = 1 / B[i, j]
+            rᵢⱼᴸ = rand(Uniform(1e-8, log(7)/2))
+            rᵢⱼᵁ = rand(Uniform(1e-8, log(7)/2))
+            bᵢⱼᴸ = aᵢⱼ * exp(-rᵢⱼᴸ)
+            bᵢⱼᵁ = aᵢⱼ * exp(rᵢⱼᵁ)
+            B[i, j] = bᵢⱼᴸ..bᵢⱼᵁ
+            B[j, i] = (1 / bᵢⱼᵁ)..(1 / bᵢⱼᴸ)
         end
     end
 
