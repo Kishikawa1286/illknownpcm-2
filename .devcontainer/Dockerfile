@@ -2,8 +2,6 @@ FROM jupyter/datascience-notebook:julia-1.9.3
 
 USER root
 
-ENV JULIA_NUM_THREADS 32
-
 RUN groupadd -f jovyan && \
     usermod -a -G jovyan jovyan
 
@@ -13,5 +11,9 @@ RUN mkdir -p /home/jovyan/.cursor-server/data/User/globalStorage/julialang.langu
 
 COPY ./init.jl /home/jovyan/init.jl
 RUN julia /home/jovyan/init.jl
+
+COPY ./entrypoint.sh /home/jovyan/entrypoint.sh
+RUN chmod +x /home/jovyan/entrypoint.sh
+ENTRYPOINT ["/home/jovyan/entrypoint.sh"]
 
 USER jovyan
