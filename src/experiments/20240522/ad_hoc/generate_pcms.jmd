@@ -1,0 +1,209 @@
+# PCMsGenerator
+
+```julia
+using Distributions
+using IntervalArithmetic
+using IntervalArithmetic.Symbols
+
+include("../../../utils/ahp/crisp_pcm/v1/crisp_pcm.jl")
+using .CrispPCM
+
+include("../../../utils/ahp/interval_pcm/v1/interval_pcm.jl")
+using .IntervalPCM
+```
+
+```julia
+const databasePath = "../experiment_202405.sqlite"
+```
+
+## ステップ1: Crisp PCM の生成
+
+クリスプ行列 $A = \left( a_{ij} \right)$ を生成する．
+
+1. 乱数 $a_{ij}$, $i, j = 1, 2, \dots, n$ ($i<j$) を $1/9$ から $9$ の一様分布によって発生させる．
+    - ($\ln 1/9$ から $\ln 9$ の一様分布によって発生させた乱数の $\exp$ をとる.)
+2. $i > j$ の成分について, $a_{ij} = 1 / a_{ji}$ とする．
+3. $\mathrm{CR}_{A} > 0.1$ であれば，1. に戻り，$A$を再び生成する．
+
+```julia
+const S = 9
+```
+
+```julia
+function generateCrispPCM(
+    n::Int
+)::Matrix
+    A = Matrix(undef, n, n)
+
+    for i in 1:n
+        for j in i:n
+            if i == j
+                A[i, j] = 1.0
+                continue
+            end
+
+            aᵢⱼ = exp(rand(Uniform(log(1/S), log(S))))
+            A[i, j] = aᵢⱼ
+            A[j, i] = 1 / aᵢⱼ
+        end
+    end
+
+    return A
+end
+```
+
+```julia
+function generateConsistentCrispPCM(
+    n::Int;
+    max_iter::Int = 1000
+)::Matrix
+    for _ in 1:max_iter
+        A = generateCrispPCM(n)
+        if !isCrispPCM(A) continue end
+        if CR(A) ≥ 0.1 continue end
+        return A
+    end
+
+    error("Failed to generate a consistent crisp PCM after $max_iter iterations")
+end
+```
+
+## ステップ 2: Crisp PCM に幅を付けて 区間 PCM を生成
+
+1. $r_{kij}^\mathrm{L}$, $r_{kij}^\mathrm{U}$, $i, j = 1, 2, \dots, n$ ($i<j$),  $k = 1, 2$ を $-(\ln7)/2$ から $(\ln7)/2$ の一様分布に従う乱数により定める．
+2. $i < j$ の成分について，$\bar{a}_{kij}^\mathrm{L}$, $\bar{a}_{kij}^\mathrm{U}$ を次のように定める．
+    $$
+    \begin{split}
+    \bar{a}_{kij}^\mathrm{L}
+    & = a_{ij} \exp \left( -r_{kij}^\mathrm{L} \right) \\
+    \bar{a}_{kij}^\mathrm{U}
+    & = a_{ij} \exp \left( r_{kij}^\mathrm{U} \right)
+    \end{split}
+    $$
+
+```julia
+function generateIntervalPCM(
+    A::Matrix{T}
+)::Matrix{Interval{T}} where {T <: Real}
+    if !isCrispPCM(A)
+        error("The input matrix is not a crisp PCM")
+    end
+
+    n = size(A, 1)
+    B = Matrix{Interval{T}}(undef, n, n)
+    for i in 1:n
+        for j in i:n
+            if i == j
+                B[i, j] = 1..1
+                continue
+            end
+
+            aᵢⱼ = A[i, j]
+            rᵢⱼᴸ = rand(Uniform(-log(7)/2, log(7)/2))
+            rᵢⱼᵁ = rand(Uniform(-log(7)/2, log(7)/2))
+            B[i, j] = (aᵢⱼ * exp(-rᵢⱼᴸ))..(aᵢⱼ * exp(rᵢⱼᵁ))
+            B[j, i] = 1 / B[i, j]
+        end
+    end
+
+    if !isIntervalPCM(B)
+        error("Failed to generate an interval PCM")
+    end
+
+    return B
+end
+```
+
+## ステップ 3: 区間の端を離散化
+
+1. $a_{kij}^\mathrm{L}$, $i, j = 1, 2, \dots, n$ ($i<j$), $ k = 1, 2$ は次のように求める．
+    $$
+    a_{ij}^\mathrm{L} = \begin{cases}
+        \displaystyle \frac{1}{9} & \text{if} ~~ \bar{a}_{ij}^\mathrm{L} \leq \displaystyle\frac{\sqrt{2}}{12}, \\[1ex]
+        \displaystyle \frac{1}{s} & \text{if} ~~ \displaystyle \frac{\sqrt{(s+1)s}}{(s+1)s} < \bar{a}_{ij}^\mathrm{L} \leq \frac{\sqrt{s(s-1)}}{s(s-1)}, \quad s = 2, 3, \dots, 8, \\
+        1 & \text{if} ~~ \displaystyle \frac{\sqrt{2}}{2} < \bar{a}_{ij}^\mathrm{L} < \sqrt{2}, \\
+        s & \text{if} ~~ \sqrt{(s-1)s} \leq \bar{a}_{ij}^\mathrm{L} < \sqrt{s(s+1)}, \quad s = 2, 3, \dots, 8, \\
+        9 & \text{if} ~~ 6\sqrt{2} \leq \bar{a}_{ij}^\mathrm{L}.
+    \end{cases}
+    $$
+2. $a_{kij}^\mathrm{U}$, $i, j = 1, 2, \dots, n$ ($i<j$), $ k = 1, 2$ も同様に求める．
+3. $a_{kij}^\mathrm{L}$ と $a_{kij}^\mathrm{U}$,  $i, j = 1, 2, \dots, n$ ($i>j$), $ k = 1, 2$ は，次式で定める．
+    $$
+    a_{kij}^\mathrm{L}=\displaystyle \frac{1}{a_{kji}^\mathrm{U}}, \quad
+    a_{kij}^\mathrm{U}=\displaystyle \frac{1}{a_{kji}^\mathrm{L}}
+    $$
+
+```julia
+function discritize(a::T)::T where {T <: Real}
+    sorted_scale = sort(vcat(1 ./ (S:-1:2), [1], 2:S))
+    boundaries = [sqrt(sorted_scale[i] * sorted_scale[i+1]) for i in 1:length(sorted_scale)-1]
+
+    for i in eachindex(boundaries)
+        if a ≤ boundaries[i]
+            return sorted_scale[i]
+        end
+    end
+
+    return last(sorted_scale)
+end
+```
+
+```julia
+function discritize(
+    A::Matrix{Interval{T}}
+)::Matrix{Interval{T}} where {T <: Real}
+    if !isIntervalPCM(A)
+        error("The input matrix is not an interval PCM")
+    end
+
+    n = size(A, 1)
+    B = Matrix{Interval{T}}(undef, n, n)
+
+    for i = 1:n, j = i:n
+        if i == j
+            B[i, j] = 1..1
+            continue
+        end
+
+        aᵢⱼ = A[i, j]
+        aᵢⱼᴸ = discritize(inf(aᵢⱼ))
+        aᵢⱼᵁ = discritize(sup(aᵢⱼ))
+        B[i, j] = aᵢⱼᴸ..aᵢⱼᵁ
+        B[j, i] = (1 / aᵢⱼᵁ)..(1 / aᵢⱼᴸ)
+    end
+
+    return B
+end
+```
+
+## 実行
+
+```julia
+"""
+    generateIntervalPCMSet(; n, sample_size, M, callback)
+
+Generate experiment cases of interval PCMs.
+
+`callback(interval_pcm_set::Vector{Vector{Matrix{Interval{Float64}}}}, i::Int)`
+"""
+function generateIntervalPCMSet(;
+    n::Int,
+    sample_size::Int,
+    M::Int,
+    callback::Function
+)
+    Threads.@threads for i in 1:sample_size
+        try
+            crisp_pcm = generateConsistentCrispPCM(n)
+            interval_pcm_samples = [generateIntervalPCM(crisp_pcm) for _ in 1:M]
+            callback(interval_pcm_samples, i)
+        catch e
+            println("Error occurred in $i-th iteration: ", e)
+        end
+    end
+end
+```
+
+```julia
+export generateIntervalPCMSet
+```

@@ -42,7 +42,7 @@ run_task() {
     # Remove .jl files for deleted .jmd files
     find "$WATCH_DIR" -type f -name "*.jl" | while read -r jl_file; do
         jmd_file="${jl_file%.jl}.jmd"
-        if [ ! -f "$jmd_file" ]; then
+        if [ ! -f "$jmd_file" ] && grep -q "$jl_file" "$PREV_STATE_FILE"; then
             echo "$jmd_file not found. Deleting $jl_file."
             rm "$jl_file"
         fi

@@ -34,7 +34,7 @@ createTable(
     db::SQLite.DB,
     tableName::AbstractString,
     schema::Tables.Schema
-) = SQLite.createtable!(db, tableName, schema; ifnotexists=false)
+) = SQLite.createtable!(db, tableName, schema)
 
 """
     dropTable(db, tableName)
