@@ -4,6 +4,11 @@ USER root
 
 ENV JULIA_NUM_THREADS=24
 
+# Install Git LFS
+# https://github.com/git-lfs/git-lfs/blob/main/INSTALLING.md
+RUN curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash && \
+    apt-get install git-lfs
+
 RUN groupadd -f jovyan && \
     usermod -a -G jovyan jovyan
 
