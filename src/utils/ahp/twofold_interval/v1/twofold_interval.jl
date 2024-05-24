@@ -13,22 +13,26 @@ using .NearlyEqual
 const TwofoldInterval = Tuple{Interval{T}, Interval{T}} where {T <: Real}
 
 """
-    isTwofoldInterval(A;
+    isTwofoldInterval(
+        𝒜;
         allow_uncommon_inner_interval=true,
-        strict=false)
+        strict=false
+    )
 
-Check whether `A` is a twofold interval.
+Check whether `𝒜` is a twofold interval.
 """
 @inline function isTwofoldInterval(
-        A::TwofoldInterval;
-        allow_uncommon_inner_interval::Bool=true,
-        strict::Bool=false
+    𝒜::TwofoldInterval;
+    allow_uncommon_inner_interval::Bool=true,
+    strict::Bool=false
 )::Bool
+    𝒜⁻ = inner(𝒜); 𝒜⁺ = outer(𝒜)
+
     # Check if outer interval is common
-    if !iscommon(A[2]) return false end
+    if !iscommon(𝒜⁺) return false end
 
     # Check if inner interval is common
-    if !iscommon(A[1])
+    if !iscommon(𝒜⁻)
         if allow_uncommon_inner_interval
             return true
         else
@@ -36,13 +40,13 @@ Check whether `A` is a twofold interval.
         end
     end
 
-    aᴸ⁻ = inf(A[1]); aᵁ⁻ = sup(A[1])
-    aᴸ⁺ = inf(A[2]); aᵁ⁺ = sup(A[2])
+    αᴸ⁻ = inf(𝒜⁻); αᵁ⁻ = sup(𝒜⁻)
+    αᴸ⁺ = inf(𝒜⁺); αᵁ⁺ = sup(𝒜⁺)
 
     # aᴸ⁻ ≈ aᴸ⁺ is allowed (but should be corrected)
-    if aᴸ⁻ < aᴸ⁺ && (strict || !isNearlyEqual(aᴸ⁻, aᴸ⁺)) return false end
+    if αᴸ⁻ < αᴸ⁺ && (strict || !isNearlyEqual(αᴸ⁻, αᴸ⁺)) return false end
     # aᵁ⁻ ≈ aᵁ⁺ is allowed (but should be corrected)
-    if aᵁ⁻ > aᵁ⁺ && (strict || !isNearlyEqual(aᵁ⁻, aᵁ⁺)) return false end
+    if αᵁ⁻ > αᵁ⁺ && (strict || !isNearlyEqual(αᵁ⁻, αᵁ⁺)) return false end
 
     return true
 end
@@ -163,11 +167,65 @@ Get inner interval of twofold interval `A`.
 inner(A::TwofoldInterval)::Interval = A[1]
 
 """
+    inner(𝒲)
+
+Get the inner intervals of twofold interval vector `𝒲`.
+"""
+function inner(𝒲::Vector{TwofoldInterval})::Vector{Interval}
+    return [inner(𝒲ᵢ) for 𝒲ᵢ in 𝒲]
+end
+
+"""
+    inner(𝒜)
+
+Extract the interval matrix consisting of the inner intervals of the each element of the twofold interval matrix `𝒜`.
+"""
+function inner(
+    𝒜::Matrix{TwofoldInterval{T}}
+)::Matrix{Interval{T}} where {T <: Real}
+    m, n = size(𝒜)
+    𝒜⁻ = Matrix{Interval}(undef, m, n)
+
+    for i = 1:m, j = 1:n
+        𝒜⁻[i, j] = 𝒜[i, j][1]
+    end
+
+    return 𝒜⁻
+end
+
+"""
     outer(A)
 
 Get outer interval of twofold interval `A`.
 """
 outer(A::TwofoldInterval)::Interval = A[2]
+
+"""
+    outer(𝒲)
+
+Get the outer intervals of twofold interval vector `𝒲`.
+"""
+function outer(𝒲::Vector{TwofoldInterval})::Vector{Interval}
+    return [outer(𝒲ᵢ) for 𝒲ᵢ in 𝒲]
+end
+
+"""
+    outer(𝒜)
+
+Extract the interval matrix consisting of the outer intervals of the each element of the twofold interval matrix `𝒜`.
+"""
+function outer(
+    𝒜::Matrix{TwofoldInterval{T}}
+)::Matrix{Interval{T}} where {T <: Real}
+    m, n = size(𝒜)
+    𝒜⁺ = Matrix{Interval}(undef, m, n)
+
+    for i = 1:m, j = 1:n
+        𝒜⁺[i, j] = 𝒜[i, j][2]
+    end
+
+    return 𝒜⁺
+end
 
 export inner, outer
 

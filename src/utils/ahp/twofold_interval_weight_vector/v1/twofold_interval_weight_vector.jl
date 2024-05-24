@@ -83,24 +83,4 @@ Unicode alias for `isincluded(W, 𝒲)`.
 
 export isincluded, ∈, ∋
 
-"""
-    inner(𝒲)
-
-Get the inner intervals of twofold interval vector `𝒲`.
-"""
-function inner(𝒲::Vector{TwofoldInterval})::Vector{Interval}
-    return [inner(𝒲ᵢ) for 𝒲ᵢ in 𝒲]
-end
-
-"""
-    outer(𝒲)
-
-Get the outer intervals of twofold interval vector `𝒲`.
-"""
-function outer(𝒲::Vector{TwofoldInterval})::Vector{Interval}
-    return [outer(𝒲ᵢ) for 𝒲ᵢ in 𝒲]
-end
-
-export inner, outer
-
 end

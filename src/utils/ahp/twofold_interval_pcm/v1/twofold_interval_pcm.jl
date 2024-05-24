@@ -20,7 +20,7 @@ using .IntervalWeightVector
 
 include("../../twofold_interval_weight_vector/v1/twofold_interval_weight_vector.jl")
 using .TwofoldIntervalWeightVector
-import .TwofoldIntervalWeightVector: inner, outer, ∈, ∋
+import .TwofoldIntervalWeightVector: ∈, ∋
 
 """
     isTwofoldIntervalPCM(
@@ -166,42 +166,6 @@ Unicode alias for `isTwofoldIntervalPCMContainingIntervalPCM(A, 𝒜)`.
 export isTwofoldIntervalPCMContainingIntervalPCM, ∈, ∋
 
 """
-    inner(𝒜)
-
-Extract the interval matrix consisting of the inner intervals of the each element of the twofold interval matrix `𝒜`.
-"""
-function inner(
-    𝒜::Matrix{TwofoldInterval{T}}
-)::Matrix{Interval{T}} where {T <: Real}
-    m, n = size(𝒜)
-    𝒜⁻ = Matrix{Interval}(undef, m, n)
-
-    for i = 1:m, j = 1:n
-        𝒜⁻[i, j] = 𝒜[i, j][1]
-    end
-
-    return 𝒜⁻
-end
-
-"""
-    outer(𝒜)
-
-Extract the interval matrix consisting of the outer intervals of the each element of the twofold interval matrix `𝒜`.
-"""
-function outer(
-    𝒜::Matrix{TwofoldInterval{T}}
-)::Matrix{Interval{T}} where {T <: Real}
-    m, n = size(𝒜)
-    𝒜⁺ = Matrix{Interval}(undef, m, n)
-
-    for i = 1:m, j = 1:n
-        𝒜⁺[i, j] = 𝒜[i, j][2]
-    end
-
-    return 𝒜⁺
-end
-
-"""
     twofoldIntervalMatrix(𝒜⁻, 𝒜⁺)
 
 Create a twofold interval matrix from the inner and outer interval matrices.
@@ -292,6 +256,6 @@ function twofoldIntervalPCM(
     return 𝒜
 end
 
-export inner, outer, twofoldIntervalMatrix, twofoldIntervalPCM
+export twofoldIntervalMatrix, twofoldIntervalPCM
 
 end

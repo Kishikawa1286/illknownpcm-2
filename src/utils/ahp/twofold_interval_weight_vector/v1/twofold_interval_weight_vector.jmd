@@ -115,31 +115,3 @@ Unicode alias for `isincluded(W, 𝒲)`.
 ```julia
 export isincluded, ∈, ∋
 ```
-
-## ユーティリティ関数
-
-```julia
-"""
-    inner(𝒲)
-
-Get the inner intervals of twofold interval vector `𝒲`.
-"""
-function inner(𝒲::Vector{TwofoldInterval})::Vector{Interval}
-    return [inner(𝒲ᵢ) for 𝒲ᵢ in 𝒲]
-end
-```
-
-```julia
-"""
-    outer(𝒲)
-
-Get the outer intervals of twofold interval vector `𝒲`.
-"""
-function outer(𝒲::Vector{TwofoldInterval})::Vector{Interval}
-    return [outer(𝒲ᵢ) for 𝒲ᵢ in 𝒲]
-end
-```
-
-```julia
-export inner, outer
-```
