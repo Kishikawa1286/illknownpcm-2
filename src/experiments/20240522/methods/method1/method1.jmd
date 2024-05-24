@@ -1,0 +1,293 @@
+# Method1
+
+```julia
+using IntervalArithmetic
+using IntervalArithmetic.Symbols
+using HiGHS
+using JuMP
+
+include("../../../../utils/ahp/nearly_equal/v1/nearly_equal.jl")
+using .NearlyEqual
+
+include("../../../../utils/ahp/interval_pcm/v1/interval_pcm.jl")
+using .IntervalPCM
+
+include("../../../../utils/ahp/twofold_interval/v1/twofold_interval.jl")
+using .TwofoldIntervalArithmetic
+
+include("../../../../utils/ahp/twofold_interval_pcm/v1/twofold_interval_pcm.jl")
+using .TwofoldIntervalPCM
+```
+
+## ステップ 1: 区間 PCM の各成分を結合する
+
+区間 PCM $A_1, A_2$ を直接結合して,
+二重区間 PCM $\mathscr{A} = \left( \left( \mathscr{A}_{ij}^-, \mathscr{A}_{ij}^+ \right) \right) =$
+$\left( \left( \left[ \alpha_{ij}^{\mathrm{L}-}, \alpha_{ij}^{\mathrm{U}-} \right], \left[ \alpha_{ij}^{\mathrm{L}+}, \alpha_{ij}^{\mathrm{U}+} \right] \right) \right)$ を生成する.
+
+```julia
+@inline function combineIntervalPCMs(
+    A₁::Matrix{Interval{T}},
+    A₂::Matrix{Interval{T}}
+)::Matrix{TwofoldInterval{T}} where {T <: Real}
+    if !isIntervalPCM(A₁) || !isIntervalPCM(A₂)
+        throw(ArgumentError("A₁ and A₂ must be Interval PCMs."))
+    end
+    if size(A₁) != size(A₂)
+        throw(ArgumentError("A₁ and A₂ must have the same size."))
+    end
+
+    n = size(A₁, 1)
+
+    𝒜 = Matrix{TwofoldInterval{T}}(undef, n, n)
+
+    for i = 1:n
+        for j = i:n
+            if i == j
+                𝒜[i,j] = (1.0..1.0, 1.0..1.0)
+                continue
+            end
+
+            A₁ᵢⱼ = A₁[i, j]; A₂ᵢⱼ = A₂[i, j]
+            a₁ᵢⱼᴸ = inf(A₁ᵢⱼ); a₁ᵢⱼᵁ = sup(A₁ᵢⱼ)
+            a₂ᵢⱼᴸ = inf(A₂ᵢⱼ); a₂ᵢⱼᵁ = sup(A₂ᵢⱼ)
+
+            αᵢⱼᴸ⁺ = min(a₁ᵢⱼᴸ, a₂ᵢⱼᴸ)
+            αᵢⱼᴸ⁻ = max(a₁ᵢⱼᴸ, a₂ᵢⱼᴸ)
+            αᵢⱼᵁ⁻ = min(a₁ᵢⱼᵁ, a₂ᵢⱼᵁ)
+            αᵢⱼᵁ⁺ = max(a₁ᵢⱼᵁ, a₂ᵢⱼᵁ)
+
+            𝒜[i,j] = (αᵢⱼᴸ⁻..αᵢⱼᵁ⁻, αᵢⱼᴸ⁺..αᵢⱼᵁ⁺)
+            𝒜[j,i] = ((1/αᵢⱼᵁ⁻)..(1/αᵢⱼᴸ⁻), (1/αᵢⱼᵁ⁺)..(1/αᵢⱼᴸ⁺))
+        end
+    end
+
+    if !isTwofoldIntervalPCM(𝒜)
+        throw(ErrorException("Failed to generate TwofoldInterval PCM."))
+    end
+
+    return 𝒜
+end
+```
+
+### ステップ 2: 整合化のための最適化問題を解く
+
+次の最適化問題を解いて二重区間 PCM $\mathscr{A}$ を整合化する.
+
+$$
+\begin{aligned}
+\text{minimize} ~~                                                                                           & ~~
+    \sum_{i, j \in N, i \neq j} \left(
+    \varepsilon_i^{\mathrm{L}} + \varepsilon_i^{\mathrm{U}}
+    \right),                                                                                                            \\
+    \text{subject to} ~~                                                                                         & ~~
+    \alpha_{ij}^{\mathrm{L}+} w_j^{\mathrm{U}} - \varepsilon_i^{\mathrm{L}} \leq w_i^{\mathrm{L}} \leq \alpha_{ij}^{\mathrm{L}-} w_j^{\mathrm{U}} + \varepsilon_i^{\mathrm{L}}, &    &
+    i, j in N, ~~ i \neq j,                                                                                            \\ & ~~
+    \alpha_{ij}^{\mathrm{U}-} w_j^{\mathrm{L}} - \varepsilon_i^{\mathrm{U}} \leq w_i^{\mathrm{U}} \leq \alpha_{ij}^{\mathrm{U}+} w_j^{\mathrm{L}} + \varepsilon_i^{\mathrm{U}}, &    &
+    i, j in N, ~~ i \neq j,                                                                                            \\ & ~~
+    \varepsilon_i^{\mathrm{L}} \geq w_i^{\mathrm{L}+} - w_i^{\mathrm{L}-}, ~~
+    \varepsilon_i^{\mathrm{U}} \geq w_i^{\mathrm{U}+} - w_i^{\mathrm{U}-},                                                                  &    &
+    i in N,                                                                                                            \\ & ~~
+    w_i^{\mathrm{L}-} \leq \alpha_{ij}^{\mathrm{L}-} w_j^{\mathrm{U}}, ~~
+    w_i^{\mathrm{U}-} \geq \alpha_{ij}^{\mathrm{U}-} w_j^{\mathrm{L}},                                                                      &    &
+    i, j in N, ~~ i \neq j,                                                                                            \\ & ~~
+    w_i^{\mathrm{L}+} \geq \alpha_{ij}^{\mathrm{L}+} w_j^{\mathrm{U}}, ~~
+    w_i^{\mathrm{U}+} \leq \alpha_{ij}^{\mathrm{U}+} w_j^{\mathrm{L}},                                                                      &    &
+    i, j in N, ~~ i \neq j,                                                                                            \\ & ~~
+    \sum_{j in N \backslash \{i\}} w_j^{\mathrm{U}} + w_i^{\mathrm{L}} \geq 2, ~~
+    \sum_{j in N \backslash \{i\}} w_j^{\mathrm{L}} + w_i^{\mathrm{U}} \leq 2,                                                    &    &
+    i in N,                                                                                                            \\ & ~~
+    \sum_{i in N} \left( w_i^{\mathrm{L}} + w_i^{\mathrm{U}} \right) = 2,                                                                \\ & ~~
+    w_i^{\mathrm{U}} \geq w_i^{\mathrm{L}} \geq \epsilon,                                                                          &    &
+    i in N,                                                                                                            \\ & ~~
+    w_i^{\mathrm{L}-}, w_i^{\mathrm{U}-}, w_i^{\mathrm{L}+}, w_i^{\mathrm{U}+}, \varepsilon_i^{\mathrm{L}}, \varepsilon_i^{\mathrm{U}} \geq 0,                         &    &
+    i in N.
+\end{aligned}
+$$
+
+```julia
+LPResult = @NamedTuple{
+    wᴸ::Vector{T}, wᵁ::Vector{T},
+    wᴸ⁻::Vector{T}, wᵁ⁻::Vector{T},
+    wᴸ⁺::Vector{T}, wᵁ⁺::Vector{T},
+    εᴸ::Vector{T}, εᵁ::Vector{T},
+    optimalValue::T
+} where {T <: Real}
+```
+
+```julia
+@inline function solveConsistentizationLP(
+    𝒜::Matrix{TwofoldInterval{T}}
+)::LPResult{T} where {T <: Real}
+    if !isTwofoldIntervalPCM(𝒜)
+        throw(ArgumentError("Given matrix is not valid as twofold interval matrix."))
+    end
+
+    n = size(𝒜, 1)
+
+    model = Model(HiGHS.Optimizer)
+    set_silent(model)
+
+    try
+        @variable(model, wᴸ[i=1:n] ≥ 1e-10); @variable(model, wᵁ[i=1:n] ≥ 1e-10)
+        @variable(model, wᴸ⁻[i=1:n] ≥ 0); @variable(model, wᵁ⁻[i=1:n] ≥ 0)
+        @variable(model, wᴸ⁺[i=1:n] ≥ 0); @variable(model, wᵁ⁺[i=1:n] ≥ 0)
+        @variable(model, εᴸ[i=1:n] ≥ 0); @variable(model, εᵁ[i=1:n] ≥ 0)
+
+        for i = 1:n
+            wᵢᴸ = wᴸ[i]; wᵢᵁ = wᵁ[i]
+            wᵢᴸ⁻ = wᴸ⁻[i]; wᵢᵁ⁻ = wᵁ⁻[i]
+            wᵢᴸ⁺ = wᴸ⁺[i]; wᵢᵁ⁺ = wᵁ⁺[i]
+            εᵢᴸ = εᴸ[i]; εᵢᵁ = εᵁ[i]
+
+            @constraint(model, wᵢᵁ ≥ wᵢᴸ)
+            @constraint(model, εᵢᴸ ≥ wᵢᴸ⁺ - wᵢᴸ⁻)
+            @constraint(model, εᵢᵁ ≥ wᵢᵁ⁻ - wᵢᵁ⁺)
+
+            ∑wⱼᴸ = sum(map(j -> wᴸ[j], filter(j -> i != j, 1:n)))
+            @constraint(model, ∑wⱼᴸ + wᵢᵁ ≤ 1)
+            ∑wⱼᵁ = sum(map(j -> wᵁ[j], filter(j -> i != j, 1:n)))
+            @constraint(model, ∑wⱼᵁ + wᵢᴸ ≥ 1)
+
+            for j = 1:n
+                if i == j continue end
+
+                αᵢⱼᴸ⁻ = inf(𝒜[i,j][1]); αᵢⱼᵁ⁻ = sup(𝒜[i,j][1])
+                αᵢⱼᴸ⁺ = inf(𝒜[i,j][2]); αᵢⱼᵁ⁺ = sup(𝒜[i,j][2])
+                wⱼᴸ = wᴸ[j]; wⱼᵁ = wᵁ[j]
+
+                @constraint(model, αᵢⱼᴸ⁺ * wⱼᵁ - εᵢᴸ ≤ wᵢᴸ)
+                @constraint(model, wᵢᴸ ≤ αᵢⱼᴸ⁻ * wⱼᵁ + εᵢᴸ)
+                @constraint(model, αᵢⱼᵁ⁻ * wⱼᴸ - εᵢᵁ ≤ wᵢᵁ)
+                @constraint(model, wᵢᵁ ≤ αᵢⱼᵁ⁺ * wⱼᴸ + εᵢᵁ)
+                @constraint(model, wᵢᴸ⁻ ≤ αᵢⱼᴸ⁻ * wⱼᵁ)
+                @constraint(model, wᵢᴸ⁺ ≥ αᵢⱼᴸ⁺ * wⱼᵁ)
+                @constraint(model, wᵢᵁ⁻ ≥ αᵢⱼᵁ⁻ * wⱼᴸ)
+                @constraint(model, wᵢᵁ⁺ ≤ αᵢⱼᵁ⁺ * wⱼᴸ)
+            end
+        end
+        
+        @constraint(model, sum(wᴸ) + sum(wᵁ) == 2)
+
+        @objective(model, Min, sum(εᴸ) + sum(εᵁ))
+
+        optimize!(model)
+
+        optimalValue = sum(value.(εᴸ)) + sum(value.(εᵁ))
+
+        ŵᴸ⁻ = correctPrecisionLoss(value.(wᴸ⁻), value.(wᴸ⁺))
+        ŵᵁ⁻ = correctPrecisionLoss(value.(wᵁ⁻), value.(ŵᴸ⁻))
+        ŵᵁ⁺ = correctPrecisionLoss(value.(wᵁ⁺), value.(ŵᵁ⁻))
+
+        return (
+            wᴸ=correctPrecisionLoss(value.(wᴸ), value.(wᵁ)),
+            wᵁ=value.(wᵁ),
+            wᴸ⁻=ŵᴸ⁻,
+            wᵁ⁻=ŵᵁ⁻,
+            wᴸ⁺=value.(wᴸ⁺),
+            wᵁ⁺=ŵᵁ⁺,
+            εᴸ=value.(εᴸ),
+            εᵁ=value.(εᵁ),
+            optimalValue=optimalValue
+        )
+    finally
+        empty!(model)
+    end
+end
+```
+
+### ステップ 3: 最適解から二重区間 PCM を構成する
+
+最適解から, 次のように二重区間 PCM $\bar{\mathscr{A}}$ を求める.
+
+$$
+\begin{aligned}
+    \bar{\alpha}_{ij}^{\mathrm{L}-} & = \max \left( \alpha_{ij}^{\mathrm{L}-}, \frac{w_i^{\mathrm{L}+}}{w_j^{\mathrm{U}}}, \frac{w_i^{\mathrm{L}}}{w_j^{\mathrm{U}+}} \right), &  &
+    i, j \in N, ~~ i \neq j,                                                                                                  \\
+    \bar{\alpha}_{ij}^{\mathrm{U}-} & = \min \left( \alpha_{ij}^{\mathrm{U}-}, \frac{w_i^{\mathrm{U}+}}{w_j^{\mathrm{L}}}, \frac{w_i^{\mathrm{U}}}{w_j^{\mathrm{L}+}} \right), &  &
+    i, j \in N, ~~ i \neq j,                                                                                                  \\
+    \bar{\alpha}_{ij}^{\mathrm{L}+} & = \min \left( \alpha_{ij}^{\mathrm{L}+}, \frac{w_i^{\mathrm{L}-}}{w_j^{\mathrm{U}}}, \frac{w_i^{\mathrm{L}}}{w_j^{\mathrm{U}-}} \right), &  &
+    i, j \in N, ~~ i \neq j,                                                                                                  \\
+    \bar{\alpha}_{ij}^{\mathrm{U}+} & = \max \left( \alpha_{ij}^{\mathrm{U}+}, \frac{w_i^{\mathrm{U}-}}{w_j^{\mathrm{L}}}, \frac{w_i^{\mathrm{U}}}{w_j^{\mathrm{L}-}} \right), &  &
+    i, j \in N, ~~ i \neq j.
+\end{aligned}
+$$
+
+```julia
+@inline function consistentize(
+    𝒜::Matrix{TwofoldInterval{T}},
+    result::LPResult{T}
+)::Matrix{TwofoldInterval{T}} where {T <: Real}
+    n = size(𝒜, 1)
+    wᴸ = result.wᴸ; wᵁ = result.wᵁ
+    wᴸ⁻ = result.wᴸ⁻; wᵁ⁻ = result.wᵁ⁻
+    wᴸ⁺ = result.wᴸ⁺; wᵁ⁺ = result.wᵁ⁺
+
+    𝒜ᶜ = Matrix{TwofoldInterval{T}}(undef, n, n)
+
+    for i = 1:n
+        for j = 1:n
+            if i == j
+                𝒜ᶜ[i,i] = (1.0..1.0, 1.0..1.0)
+                continue
+            end
+
+            𝒜ᵢⱼ = 𝒜[i,j]
+            𝒜ᵢⱼ⁻ = TwofoldIntervalArithmetic.inner(𝒜ᵢⱼ)
+            𝒜ᵢⱼ⁺ = TwofoldIntervalArithmetic.outer(𝒜ᵢⱼ)
+            αᵢⱼᴸ⁻ = inf(𝒜ᵢⱼ⁻); αᵢⱼᵁ⁻ = sup(𝒜ᵢⱼ⁻)
+            αᵢⱼᴸ⁺ = inf(𝒜ᵢⱼ⁺); αᵢⱼᵁ⁺ = sup(𝒜ᵢⱼ⁺)
+            wᵢᴸ = wᴸ[i]; wᵢᵁ = wᵁ[i]
+            wᵢᴸ⁻ = wᴸ⁻[i]; wᵢᵁ⁻ = wᵁ⁻[i]
+            wᵢᴸ⁺ = wᴸ⁺[i]; wᵢᵁ⁺ = wᵁ⁺[i]
+            wⱼᴸ = wᴸ[j]; wⱼᵁ = wᵁ[j]
+            wⱼᴸ⁻ = wᴸ⁻[j]; wⱼᵁ⁻ = wᵁ⁻[j]
+            wⱼᴸ⁺ = wᴸ⁺[j]; wⱼᵁ⁺ = wᵁ⁺[j]
+            wᵢᴸ = wᴸ[i]; wᵢᵁ = wᵁ[i]
+            wᵢᴸ⁻ = wᴸ⁻[i]; wᵢᵁ⁻ = wᵁ⁻[i]
+            wᵢᴸ⁺ = wᴸ⁺[i]; wᵢᵁ⁺ = wᵁ⁺[i]
+            wⱼᴸ = wᴸ[j]; wⱼᵁ = wᵁ[j]
+            wⱼᴸ⁻ = wᴸ⁻[j]; wⱼᵁ⁻ = wᵁ⁻[j]
+            wⱼᴸ⁺ = wᴸ⁺[j]; wⱼᵁ⁺ = wᵁ⁺[j]
+
+            αᵢⱼᶜᴸ⁺ = min(αᵢⱼᴸ⁺, wᵢᴸ⁻/wⱼᵁ, wᵢᴸ/wⱼᵁ⁻)
+            αᵢⱼᶜᴸ⁻ = max(αᵢⱼᴸ⁻, wᵢᴸ⁺/wⱼᵁ, wᵢᴸ/wⱼᵁ⁺)
+            αᵢⱼᶜᵁ⁻ = min(αᵢⱼᵁ⁻, wᵢᵁ⁺/wⱼᴸ, wᵢᵁ/wⱼᴸ⁺)
+            αᵢⱼᶜᵁ⁺ = max(αᵢⱼᵁ⁺, wᵢᵁ⁻/wⱼᴸ, wᵢᵁ/wⱼᴸ⁻)
+
+            αᵢⱼᶜᴸ⁻ = correctPrecisionLoss(αᵢⱼᶜᴸ⁻, αᵢⱼᶜᴸ⁺)
+            αᵢⱼᶜᵁ⁻ = correctPrecisionLoss(αᵢⱼᶜᵁ⁻, αᵢⱼᶜᴸ⁻)
+            αᵢⱼᶜᵁ⁺ = correctPrecisionLoss(αᵢⱼᶜᵁ⁺, αᵢⱼᶜᵁ⁻)
+
+            if αᵢⱼᶜᴸ⁻ > αᵢⱼᶜᵁ⁻
+                𝒜ᶜ[i,j] = (emptyinterval(), αᵢⱼᶜᴸ⁺..αᵢⱼᶜᵁ⁺)
+            else
+                𝒜ᶜ[i,j] = (αᵢⱼᶜᴸ⁻..αᵢⱼᶜᵁ⁻, αᵢⱼᶜᴸ⁺..αᵢⱼᶜᵁ⁺)
+            end
+        end
+    end
+
+    if !isTwofoldIntervalPCM(𝒜ᶜ)
+        throw(ErrorException("Failed to consistentize a twofold interval PCM."))
+    end
+
+    return 𝒜ᶜ
+end
+```
+
+## 実行
+
+```julia
+@inline function method1(
+    A₁::Matrix{Interval{T}},
+    A₂::Matrix{Interval{T}}
+)::Matrix{TwofoldInterval{T}} where {T <: Real}
+    𝒜 = combineIntervalPCMs(A₁, A₂)
+    result = solveConsistentizationLP(𝒜)
+    return consistentize(𝒜, result)
+end
+```
+
+```julia
+export method1
+```

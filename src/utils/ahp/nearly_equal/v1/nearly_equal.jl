@@ -20,6 +20,32 @@ function isNearlyEqual(
     return abs(a - b) < tolerance
 end
 
-export isNearlyEqual
+"""
+    correctPrecisionLoss(a, b; tolerance=1e-6)
+
+    Correct the precision loss between `a` and `b`.
+    The default tolerance is `1e-6`.
+"""
+function correctPrecisionLoss(
+    a::T,
+    b::T;
+    tolerance=1e-6
+)::T where {T<:Real}
+    if isNearlyEqual(a, b; tolerance=tolerance)
+        return b
+    else
+        return a
+    end
+end
+
+function correctPrecisionLoss(
+    a::Vector{T},
+    b::Vector{T};
+    tolerance=1e-6
+)::Vector{T} where {T<:Real}
+    return map(i -> correctPrecisionLoss(a[i], b[i]; tolerance=tolerance), 1:length(a))
+end
+
+export isNearlyEqual, correctPrecisionLoss
 
 end
