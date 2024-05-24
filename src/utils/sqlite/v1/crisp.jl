@@ -54,6 +54,34 @@ end
 export insertCrispData
 
 """
+    parseCrispData(data)
+
+Parse the crisp matrix or vector from the table.
+"""
+function parseCrispData(
+    data::DataFrameRow
+)::Union{
+    AbstractMatrix{Float64},
+    AbstractVector{Float64}
+}
+    type = data[:type]
+    jsonData = data[:data]
+
+    if type == "crisp_matrix"
+        rows = data[:rows]
+        cols = data[:cols]
+        return reshape(JSON3.read(jsonData), rows, cols)
+    end
+
+    if type == "crisp_vector"
+        length = data[:rows]
+        return reshape(JSON3.read(jsonData), length)
+    end
+
+    error("Unknown data type: $type")
+end
+
+"""
     getCrispData(db, tableName, id)
 
 Get a crisp matrix or vector from the table by ID.
@@ -68,23 +96,9 @@ function getCrispData(
     AbstractVector{Float64}
 }
     data = queryMatrixDataSelect(db, tableName, id)
-    type = data[2]
-    jsonData = data[5]
-
-    if type == "crisp_matrix"
-        rows = data[3]
-        cols = data[4]
-        return reshape(JSON3.read(jsonData), rows, cols)
-    end
-
-    if type == "crisp_vector"
-        length = data[3]
-        return reshape(JSON3.read(jsonData), length)
-    end
-
-    error("Unknown data type: $type")
+    return parseCrispData(data)
 end
 
-export getCrispData
+export parseCrispData, getCrispData
 
 end

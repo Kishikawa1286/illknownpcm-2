@@ -9,6 +9,9 @@ using JSON3
 include("../../../utils/sqlite/v1/sqlite.jl")
 using .SQLiteHelper
 
+include("../../../utils/sqlite/v1/parser.jl")
+using .MatrixParser
+
 samplesDataSchema = Tables.Schema(
     [:id, :matrix_ids],
     [String, String]
@@ -111,6 +114,45 @@ function getSampleIds(
     return df.id
 end
 
-export getSampleIds
+function getAllSamplesWithMatrixData(
+    db::SQLite.DB,
+    tableName::AbstractString,
+    matrixTableName::AbstractString,
+)::DataFrame
+    query = """
+    SELECT s.id AS sample_id, m.id AS matrix_id, m.type, m.rows, m.cols, m.data
+    FROM $tableName AS s
+    JOIN json_each(s.matrix_ids) AS je ON je.value = m.id
+    JOIN $matrixTableName AS m ON je.value = m.id
+    """
+    result = DBInterface.execute(db, query) |> DataFrame
+    if isempty(result)
+        throw(ArgumentError("No matrix data found for sample id: $sampleId"))
+    end
+    return result
+end
+
+function parseAndReturnAllMatrixData(
+    db::SQLite.DB,
+    tableName::AbstractString,
+    matrixTableName::AbstractString
+)
+    dataFrame = getAllSamplesWithMatrixData(db, tableName, matrixTableName)
+    groupedData = groupby(dataFrame, :sample_id)
+    parsedData = [
+        (
+            sample_id=key.sample_id,
+            matrices=[
+                (
+                    id=row[:matrix_id],
+                    data=parseMatrixData(row)
+                ) for row in eachrow(subgroup)
+            ]
+        ) for (key, subgroup) in pairs(groupedData)
+    ]
+    return parsedData
+end
+
+export parseAndReturnAllMatrixData
 
 end

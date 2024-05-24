@@ -10,7 +10,7 @@ using IntervalArithmetic.Symbols
 include("../../nearly_equal/v1/nearly_equal.jl")
 using .NearlyEqual
 
-const TwofoldInterval = Tuple{Interval{T}, Interval{T}} where {T <: Real}
+const TwofoldInterval = Tuple{Interval{T},Interval{T}} where {T<:Real}
 
 """
     isTwofoldInterval(
@@ -26,10 +26,13 @@ Check whether `𝒜` is a twofold interval.
     allow_uncommon_inner_interval::Bool=true,
     strict::Bool=false
 )::Bool
-    𝒜⁻ = inner(𝒜); 𝒜⁺ = outer(𝒜)
+    𝒜⁻ = inner(𝒜)
+    𝒜⁺ = outer(𝒜)
 
     # Check if outer interval is common
-    if !iscommon(𝒜⁺) return false end
+    if !iscommon(𝒜⁺)
+        return false
+    end
 
     # Check if inner interval is common
     if !iscommon(𝒜⁻)
@@ -40,13 +43,19 @@ Check whether `𝒜` is a twofold interval.
         end
     end
 
-    αᴸ⁻ = inf(𝒜⁻); αᵁ⁻ = sup(𝒜⁻)
-    αᴸ⁺ = inf(𝒜⁺); αᵁ⁺ = sup(𝒜⁺)
+    αᴸ⁻ = inf(𝒜⁻)
+    αᵁ⁻ = sup(𝒜⁻)
+    αᴸ⁺ = inf(𝒜⁺)
+    αᵁ⁺ = sup(𝒜⁺)
 
     # aᴸ⁻ ≈ aᴸ⁺ is allowed (but should be corrected)
-    if αᴸ⁻ < αᴸ⁺ && (strict || !isNearlyEqual(αᴸ⁻, αᴸ⁺)) return false end
+    if αᴸ⁻ < αᴸ⁺ && (strict || !isNearlyEqual(αᴸ⁻, αᴸ⁺))
+        return false
+    end
     # aᵁ⁻ ≈ aᵁ⁺ is allowed (but should be corrected)
-    if αᵁ⁻ > αᵁ⁺ && (strict || !isNearlyEqual(αᵁ⁻, αᵁ⁺)) return false end
+    if αᵁ⁻ > αᵁ⁺ && (strict || !isNearlyEqual(αᵁ⁻, αᵁ⁺))
+        return false
+    end
 
     return true
 end
@@ -63,17 +72,21 @@ Throw an `ArgumentError` if `𝒜` is not a twofold interval.
     A::Interval{T},
     𝒜::TwofoldInterval{T};
     strict::Bool=false
-)::Bool where {T <: Real}
+)::Bool where {T<:Real}
     if !isTwofoldInterval(𝒜; strict=strict)
         throw(ArgumentError("𝒜 is not a twofold interval"))
     end
 
     tolerance = strict ? 1e-10 : 1e-6
 
-    𝒜⁻ = inner(𝒜); 𝒜⁺ = outer(𝒜)
-    aᴸ = inf(A); aᵁ = sup(A)
-    αᴸ⁻ = inf(𝒜⁻); αᵁ⁻ = sup(𝒜⁻)
-    αᴸ⁺ = inf(𝒜⁺); αᵁ⁺ = sup(𝒜⁺)
+    𝒜⁻ = inner(𝒜)
+    𝒜⁺ = outer(𝒜)
+    aᴸ = inf(A)
+    aᵁ = sup(A)
+    αᴸ⁻ = inf(𝒜⁻)
+    αᵁ⁻ = sup(𝒜⁻)
+    αᴸ⁺ = inf(𝒜⁺)
+    αᵁ⁺ = sup(𝒜⁺)
 
     if αᴸ⁺ ≤ aᴸ ≤ αᴸ⁻ &&
        αᵁ⁻ ≤ aᵁ ≤ αᵁ⁺
@@ -81,9 +94,9 @@ Throw an `ArgumentError` if `𝒜` is not a twofold interval.
     end
 
     if (isNearlyEqual(aᴸ, αᴸ⁺; tolerance=tolerance) ||
-            isNearlyEqual(aᴸ, αᴸ⁻; tolerance=tolerance)) &&
+        isNearlyEqual(aᴸ, αᴸ⁻; tolerance=tolerance)) &&
        (isNearlyEqual(aᵁ, αᵁ⁺; tolerance=tolerance) ||
-            isNearlyEqual(aᵁ, αᵁ⁻; tolerance=tolerance))
+        isNearlyEqual(aᵁ, αᵁ⁻; tolerance=tolerance))
         return true
     end
 
@@ -116,7 +129,7 @@ Throw an `ArgumentError` if `𝒜` and `ℬ` is not a twofold interval.
     𝒜::TwofoldInterval{T},
     ℬ::TwofoldInterval{T};
     strict::Bool=false
-)::Bool where {T <: Real}
+)::Bool where {T<:Real}
     if !isTwofoldInterval(𝒜; strict=strict)
         throw(ArgumentError("𝒜 is not a twofold interval"))
     end
@@ -126,17 +139,23 @@ Throw an `ArgumentError` if `𝒜` and `ℬ` is not a twofold interval.
 
     tolerance = strict ? 1e-10 : 1e-6
 
-    𝒜⁻ = inner(𝒜); 𝒜⁺ = outer(𝒜)
-    αᴸ⁻ = inf(𝒜⁻); αᵁ⁻ = sup(𝒜⁻)
-    αᴸ⁺ = inf(𝒜⁺); αᵁ⁺ = sup(𝒜⁺)
-    ℬ⁻ = inner(ℬ); ℬ⁺ = outer(ℬ)
-    βᴸ⁻ = inf(ℬ⁻); βᵁ⁻ = sup(ℬ⁻)
-    βᴸ⁺ = inf(ℬ⁺); βᵁ⁺ = sup(ℬ⁺)
+    𝒜⁻ = inner(𝒜)
+    𝒜⁺ = outer(𝒜)
+    αᴸ⁻ = inf(𝒜⁻)
+    αᵁ⁻ = sup(𝒜⁻)
+    αᴸ⁺ = inf(𝒜⁺)
+    αᵁ⁺ = sup(𝒜⁺)
+    ℬ⁻ = inner(ℬ)
+    ℬ⁺ = outer(ℬ)
+    βᴸ⁻ = inf(ℬ⁻)
+    βᵁ⁻ = sup(ℬ⁻)
+    βᴸ⁺ = inf(ℬ⁺)
+    βᵁ⁺ = sup(ℬ⁺)
 
     if (βᴸ⁺ ≤ αᴸ⁺ || isNearlyEqual(βᴸ⁺, αᴸ⁺; tolerance=tolerance)) &&
-        (αᴸ⁻ ≤ βᴸ⁻ || isNearlyEqual(αᴸ⁻, βᴸ⁻; tolerance=tolerance)) &&
-        (βᵁ⁻ ≤ αᵁ⁻ || isNearlyEqual(βᵁ⁻, αᵁ⁻; tolerance=tolerance)) &&
-        (αᵁ⁺ ≤ βᵁ⁺ || isNearlyEqual(αᵁ⁺, βᵁ⁺; tolerance=tolerance))
+       (αᴸ⁻ ≤ βᴸ⁻ || isNearlyEqual(αᴸ⁻, βᴸ⁻; tolerance=tolerance)) &&
+       (βᵁ⁻ ≤ αᵁ⁻ || isNearlyEqual(βᵁ⁻, αᵁ⁻; tolerance=tolerance)) &&
+       (αᵁ⁺ ≤ βᵁ⁺ || isNearlyEqual(αᵁ⁺, βᵁ⁺; tolerance=tolerance))
         return true
     end
 
@@ -182,7 +201,7 @@ Extract the interval matrix consisting of the inner intervals of the each elemen
 """
 function inner(
     𝒜::Matrix{TwofoldInterval{T}}
-)::Matrix{Interval{T}} where {T <: Real}
+)::Matrix{Interval{T}} where {T<:Real}
     m, n = size(𝒜)
     𝒜⁻ = Matrix{Interval}(undef, m, n)
 
@@ -216,7 +235,7 @@ Extract the interval matrix consisting of the outer intervals of the each elemen
 """
 function outer(
     𝒜::Matrix{TwofoldInterval{T}}
-)::Matrix{Interval{T}} where {T <: Real}
+)::Matrix{Interval{T}} where {T<:Real}
     m, n = size(𝒜)
     𝒜⁺ = Matrix{Interval}(undef, m, n)
 

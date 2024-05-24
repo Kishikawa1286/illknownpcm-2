@@ -114,6 +114,19 @@ function queryMatrixDataSelect(
     return df[1, :]
 end
 
-export createMatrixTable, queryMatrixDataInsert, queryMatrixDataSelect
+function matrixDataExists(
+    db::SQLite.DB,
+    tableName::AbstractString,
+    id::AbstractString
+)::Bool
+    try
+        queryMatrixDataSelect(db, tableName, id)
+        return true
+    catch
+        return false
+    end
+end
+
+export createMatrixTable, queryMatrixDataInsert, queryMatrixDataSelect, matrixDataExists
 
 end

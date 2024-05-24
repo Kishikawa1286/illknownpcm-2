@@ -1,5 +1,6 @@
 module IntervalTable
 
+using DataFrames
 using Tables
 using SQLite
 using JSON3
@@ -95,17 +96,16 @@ end
 export insertIntervalData
 
 """
-    getIntervalData(db, tableName, id)
+    parseIntervalData(data)
 
-Get the interval matrix or vector from the table.
-Throws an `ArgumentError` if the document does not exist.
+Parse the interval matrix or vector from the table.
 """
-function getIntervalData(
-    db::SQLite.DB,
-    tableName::AbstractString,
-    id::AbstractString
-)::Union{Matrix{Interval{Float64}},Vector{Interval{Float64}}}
-    data = queryMatrixDataSelect(db, tableName, id)
+function parseIntervalData(
+    data::DataFrameRow
+)::Union{
+    Matrix{Interval{Float64}},
+    Vector{Interval{Float64}}
+}
     type = data[:type]
     jsonData = data[:data]
 
@@ -132,6 +132,21 @@ function getIntervalData(
     error("Unknown data type: $type")
 end
 
-export getIntervalData
+"""
+    getIntervalData(db, tableName, id)
+
+Get the interval matrix or vector from the table.
+Throws an `ArgumentError` if the document does not exist.
+"""
+function getIntervalData(
+    db::SQLite.DB,
+    tableName::AbstractString,
+    id::AbstractString
+)::Union{Matrix{Interval{Float64}},Vector{Interval{Float64}}}
+    data = queryMatrixDataSelect(db, tableName, id)
+    return parseIntervalData(data)
+end
+
+export parseIntervalData, getIntervalData
 
 end

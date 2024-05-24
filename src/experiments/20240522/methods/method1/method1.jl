@@ -20,7 +20,7 @@ using .TwofoldIntervalArithmetic
 include("../../../../utils/ahp/twofold_interval_pcm/v1/twofold_interval_pcm.jl")
 using .TwofoldIntervalPCM
 
-@inline function combineIntervalPCMs(
+function combineIntervalPCMs(
     A₁::Matrix{Interval{T}},
     A₂::Matrix{Interval{T}}
 )::Matrix{TwofoldInterval{T}} where {T <: Real}
@@ -71,7 +71,7 @@ LPResult = @NamedTuple{
     optimalValue::T
 } where {T <: Real}
 
-@inline function solveConsistentizationLP(
+function solveConsistentizationLP(
     𝒜::Matrix{TwofoldInterval{T}}
 )::LPResult{T} where {T <: Real}
     if !isTwofoldIntervalPCM(𝒜)
@@ -150,7 +150,7 @@ LPResult = @NamedTuple{
     end
 end
 
-@inline function consistentize(
+function consistentize(
     𝒜::Matrix{TwofoldInterval{T}},
     result::LPResult{T}
 )::Matrix{TwofoldInterval{T}} where {T <: Real}
@@ -194,6 +194,7 @@ end
             αᵢⱼᶜᴸ⁻ = correctPrecisionLoss(αᵢⱼᶜᴸ⁻, αᵢⱼᶜᴸ⁺)
             αᵢⱼᶜᵁ⁻ = correctPrecisionLoss(αᵢⱼᶜᵁ⁻, αᵢⱼᶜᴸ⁻)
             αᵢⱼᶜᵁ⁺ = correctPrecisionLoss(αᵢⱼᶜᵁ⁺, αᵢⱼᶜᵁ⁻)
+            αᵢⱼᶜᴸ⁺ = min(αᵢⱼᶜᴸ⁺, αᵢⱼᶜᵁ⁺)
 
             if αᵢⱼᶜᴸ⁻ > αᵢⱼᶜᵁ⁻
                 𝒜ᶜ[i,j] = (emptyinterval(), αᵢⱼᶜᴸ⁺..αᵢⱼᶜᵁ⁺)
@@ -210,7 +211,7 @@ end
     return 𝒜ᶜ
 end
 
-@inline function method1(
+function method1(
     A₁::Matrix{Interval{T}},
     A₂::Matrix{Interval{T}}
 )::Matrix{TwofoldInterval{T}} where {T <: Real}

@@ -1,5 +1,6 @@
 module TwofoldIntervalTable
 
+using DataFrames
 using Tables
 using SQLite
 using JSON3
@@ -95,20 +96,16 @@ end
 export insertTwofoldIntervalData
 
 """
-    getTwofoldIntervalData(db, tableName, id)
+    parseTwofoldIntervalData(data)
 
-Get the twofold interval matrix or vector from the table.
-Throws an `ArgumentError` if the document does not exist.
+Parse the twofold interval matrix or vector from the table.
 """
-function getTwofoldIntervalData(
-    db::SQLite.DB,
-    tableName::AbstractString,
-    id::AbstractString
+function parseTwofoldIntervalData(
+    data::DataFrameRow
 )::Union{
     AbstractMatrix{TwofoldInterval{Float64}},
     AbstractVector{TwofoldInterval{Float64}}
 }
-    data = queryMatrixDataSelect(db, tableName, id)
     type = data[:type]
     jsonData = data[:data]
 
@@ -135,6 +132,24 @@ function getTwofoldIntervalData(
     error("Unknown data type: $type")
 end
 
-export getTwofoldIntervalData
+"""
+    getTwofoldIntervalData(db, tableName, id)
+
+Get the twofold interval matrix or vector from the table.
+Throws an `ArgumentError` if the document does not exist.
+"""
+function getTwofoldIntervalData(
+    db::SQLite.DB,
+    tableName::AbstractString,
+    id::AbstractString
+)::Union{
+    AbstractMatrix{TwofoldInterval{Float64}},
+    AbstractVector{TwofoldInterval{Float64}}
+}
+    data = queryMatrixDataSelect(db, tableName, id)
+    return parseTwofoldIntervalData(data)
+end
+
+export parseTwofoldIntervalData, getTwofoldIntervalData
 
 end
