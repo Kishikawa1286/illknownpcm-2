@@ -97,7 +97,7 @@ $$
     \sum_{j in N \backslash \{i\}} w_j^{\mathrm{U}} + w_i^{\mathrm{L}} \geq 2, ~~
     \sum_{j in N \backslash \{i\}} w_j^{\mathrm{L}} + w_i^{\mathrm{U}} \leq 2,                                                    &    &
     i in N,                                                                                                            \\ & ~~
-    \sum_{i in N} \left( w_i^{\mathrm{L}} + w_i^{\mathrm{U}} \right) = 2,                                                                \\ & ~~
+    % \sum_{i in N} \left( w_i^{\mathrm{L}} + w_i^{\mathrm{U}} \right) = 2,                                                                \\ & ~~
     w_i^{\mathrm{U}} \geq w_i^{\mathrm{L}} \geq \epsilon,                                                                          &    &
     i in N,                                                                                                            \\ & ~~
     w_i^{\mathrm{L}-}, w_i^{\mathrm{U}-}, w_i^{\mathrm{L}+}, w_i^{\mathrm{U}+}, \varepsilon_i^{\mathrm{L}}, \varepsilon_i^{\mathrm{U}} \geq 0,                         &    &

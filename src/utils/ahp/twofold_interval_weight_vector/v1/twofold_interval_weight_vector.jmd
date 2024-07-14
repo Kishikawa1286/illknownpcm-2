@@ -85,7 +85,7 @@ function isincluded(
 
     for i = 1:n
         Wᵢ = W[i]; 𝒲ᵢ = 𝒲[i]
-        if !isincluded(Wᵢ, 𝒲ᵢ; strict=strict)
+        if !TwofoldIntervalArithmetic.isincluded(Wᵢ, 𝒲ᵢ; strict=strict)
             return false
         end
     end

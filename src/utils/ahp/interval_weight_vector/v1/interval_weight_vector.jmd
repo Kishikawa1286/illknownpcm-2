@@ -86,8 +86,8 @@ function isincluded(
 
         if strict return false end
 
-        if !isNearlyEqual(vᵢ, wᵢᴸ; tolerance=tolerance) ||        
-            !isNearlyEqual(vᵢ, wᵢᵁ; tolerance=tolerance)
+        if !NearlyEqual.isNearlyEqual(vᵢ, wᵢᴸ; tolerance=tolerance) ||        
+            !NearlyEqual.isNearlyEqual(vᵢ, wᵢᵁ; tolerance=tolerance)
             return false
         end
     end
@@ -159,9 +159,9 @@ function isNormalizedIntervalWeightVector(
         end
 
         if Σⱼwⱼᵁ + wᵢᴸ < 1 &&
-            !isNearlyEqual(Σⱼwⱼᵁ + wᵢᴸ, 1; tolerance=tolerance) return false end
+            !NearlyEqual.isNearlyEqual(Σⱼwⱼᵁ + wᵢᴸ, 1.0; tolerance=tolerance) return false end
         if Σⱼwⱼᴸ + wᵢᵁ > 1 &&
-            !isNearlyEqual(Σⱼwⱼᴸ + wᵢᵁ, 1; tolerance=tolerance) return false end
+            !NearlyEqual.isNearlyEqual(Σⱼwⱼᴸ + wᵢᵁ, 1.0; tolerance=tolerance) return false end
     end
 
     return true

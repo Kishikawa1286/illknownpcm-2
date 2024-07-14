@@ -17,14 +17,18 @@ Check whether `W` is an interval weight vector.
 """
 function isIntervalWeightVector(
     W::Vector{Interval{T}}
-)::Bool where {T <: Real}
+)::Bool where {T<:Real}
     n = length(W)
 
     for i in 1:n
         Wᵢ = W[i]
-        if !iscommon(Wᵢ) return false end
+        if !iscommon(Wᵢ)
+            return false
+        end
         wᵢᴸ = inf(Wᵢ)
-        if wᵢᴸ <= 0 return false end
+        if wᵢᴸ <= 0
+            return false
+        end
     end
 
     return true
@@ -43,8 +47,8 @@ Throws a `DimensionMismatch` if the dimensions of `V` and `W` do not match.
 function isincluded(
     V::Vector{T},
     W::Vector{Interval{T}};
-    strict::Bool = false
-)::Bool where {T <: Real}
+    strict::Bool=false
+)::Bool where {T<:Real}
     if !isCrispWeightVector(V)
         throw(ArgumentError("The given vector is not a crisp weight vector."))
     end
@@ -61,15 +65,21 @@ function isincluded(
     n = length(V)
 
     for i in 1:n
-        Wᵢ = W[i]; vᵢ = V[i]
-        wᵢᴸ = inf(Wᵢ); wᵢᵁ = sup(Wᵢ)
+        Wᵢ = W[i]
+        vᵢ = V[i]
+        wᵢᴸ = inf(Wᵢ)
+        wᵢᵁ = sup(Wᵢ)
 
-        if vᵢ ∈ Wᵢ continue end
+        if vᵢ ∈ Wᵢ
+            continue
+        end
 
-        if strict return false end
+        if strict
+            return false
+        end
 
-        if !isNearlyEqual(vᵢ, wᵢᴸ; tolerance=tolerance) ||        
-            !isNearlyEqual(vᵢ, wᵢᵁ; tolerance=tolerance)
+        if !NearlyEqual.isNearlyEqual(vᵢ, wᵢᴸ; tolerance=tolerance) ||
+           !NearlyEqual.isNearlyEqual(vᵢ, wᵢᵁ; tolerance=tolerance)
             return false
         end
     end
@@ -101,26 +111,38 @@ Check whether `W` is a normalized interval weight vector.
 function isNormalizedIntervalWeightVector(
     W::Vector{Interval{T}};
     strict::Bool=false
-)::Bool where {T <: Real}
+)::Bool where {T<:Real}
     tolerance = strict ? 1e-10 : 1e-6
 
     n = length(W)
-    if !isIntervalWeightVector(W) return false end
+    if !isIntervalWeightVector(W)
+        return false
+    end
 
     for i in 1:n
-        wᵢᴸ = inf(W[i]); wᵢᵁ = sup(W[i])
+        wᵢᴸ = inf(W[i])
+        wᵢᵁ = sup(W[i])
 
-        Σⱼwⱼᴸ = 0; Σⱼwⱼᵁ = 0
+        Σⱼwⱼᴸ = 0
+        Σⱼwⱼᵁ = 0
         for j in 1:n
-            if i == j continue end
-            wⱼᴸ = inf(W[j]); wⱼᵁ = sup(W[j])
-            Σⱼwⱼᴸ += wⱼᴸ; Σⱼwⱼᵁ += wⱼᵁ
+            if i == j
+                continue
+            end
+            wⱼᴸ = inf(W[j])
+            wⱼᵁ = sup(W[j])
+            Σⱼwⱼᴸ += wⱼᴸ
+            Σⱼwⱼᵁ += wⱼᵁ
         end
 
         if Σⱼwⱼᵁ + wᵢᴸ < 1 &&
-            !isNearlyEqual(Σⱼwⱼᵁ + wᵢᴸ, 1; tolerance=tolerance) return false end
+           !NearlyEqual.isNearlyEqual(Σⱼwⱼᵁ + wᵢᴸ, 1.0; tolerance=tolerance)
+            return false
+        end
         if Σⱼwⱼᴸ + wᵢᵁ > 1 &&
-            !isNearlyEqual(Σⱼwⱼᴸ + wᵢᵁ, 1; tolerance=tolerance) return false end
+           !NearlyEqual.isNearlyEqual(Σⱼwⱼᴸ + wᵢᵁ, 1.0; tolerance=tolerance)
+            return false
+        end
     end
 
     return true

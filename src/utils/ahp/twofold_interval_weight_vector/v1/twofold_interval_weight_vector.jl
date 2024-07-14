@@ -24,17 +24,17 @@ Check whether `𝒲` is a twofold interval weight vector or not.
 """
 @inline function isTwofoldIntervalWeightVector(
     𝒲::Vector{TwofoldInterval{T}};
-    allow_uncommon_inner_interval = true,
-    strict = false,
-)::Bool where {T <: Real}
+    allow_uncommon_inner_interval=true,
+    strict=false,
+)::Bool where {T<:Real}
     n = length(𝒲)
 
     for i in 1:n
         𝒲ᵢ = 𝒲[i]
         if !isTwofoldInterval(
             𝒲ᵢ;
-            allow_uncommon_inner_interval = allow_uncommon_inner_interval,
-            strict = strict,
+            allow_uncommon_inner_interval=allow_uncommon_inner_interval,
+            strict=strict,
         )
             return false
         end
@@ -54,12 +54,13 @@ function isincluded(
     W::Vector{Interval{T}},
     𝒲::Vector{TwofoldInterval{T}};
     strict=false
-)::Bool where {T <: Real}
+)::Bool where {T<:Real}
     n = length(W)
 
     for i = 1:n
-        Wᵢ = W[i]; 𝒲ᵢ = 𝒲[i]
-        if !isincluded(Wᵢ, 𝒲ᵢ; strict=strict)
+        Wᵢ = W[i]
+        𝒲ᵢ = 𝒲[i]
+        if !TwofoldIntervalArithmetic.isincluded(Wᵢ, 𝒲ᵢ; strict=strict)
             return false
         end
     end
