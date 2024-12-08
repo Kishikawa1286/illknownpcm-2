@@ -1,24 +1,51 @@
-FROM jupyter/datascience-notebook:julia-1.9.3
+FROM ubuntu:24.04
 
 USER root
 
-ENV JULIA_NUM_THREADS=24
+ARG JULIA_VERSION="1.11.2"
+
+ENV JULIA_NUM_THREADS="32"
+ENV DEBIAN_FRONTEND="noninteractive"
+
+RUN apt update && \
+    apt install -y curl git wget
+
+# Install Oh My Zsh
+# See: https://ohmyz.sh
+ARG OH_MY_ZSH_INSTALLATION_SCRIPT_URL="https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh"
+RUN apt update && \
+    apt install -y zsh && \
+    sh -c "$(wget ${OH_MY_ZSH_INSTALLATION_SCRIPT_URL} -O -)"
 
 # Install Git LFS
 # https://github.com/git-lfs/git-lfs/blob/main/INSTALLING.md
-RUN apt-get update && \
-    curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash && \
-    apt-get install -y git-lfs
+ARG GIT_LFS_INSTALLATION_SCRIPT_URL="https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh"
+RUN apt update && \
+    curl -s ${GIT_LFS_INSTALLATION_SCRIPT_URL} | bash && \
+    apt install -y git-lfs
 
-RUN groupadd -f jovyan && \
-    usermod -a -G jovyan jovyan
+# Install Julia
+# https://docs.julialang.org/en/v1/manual/installation/
+ARG JULIA_INSTALLATION_SCRIPT_URL="https://install.julialang.org"
+ARG JULIAUP_DIR="/root/.juliaup"
+ARG JULIAUP="${JULIAUP_DIR}/bin/juliaup"
+RUN curl -fsSL ${JULIA_INSTALLATION_SCRIPT_URL} | \
+    sh -s -- --yes --default-channel=release -p=${JULIAUP_DIR} && \
+    chmod +x ${JULIAUP} && \
+    ${JULIAUP} add ${JULIA_VERSION} && \
+    ${JULIAUP} default ${JULIA_VERSION}
 
-RUN mkdir -p /home/jovyan/.cursor-server/data/User/globalStorage/julialang.language-julia/lsdepot/v1 && \
-    chown -R jovyan:jovyan /home/jovyan/.cursor-server && \
-    chmod -R u+rw /home/jovyan/.cursor-server
+# Run init.jl
+ARG INIT_SCRIPT_DIR="/tmp"
+ARG INIT_SCRIPT_PATH="${INIT_SCRIPT_DIR}/init.jl"
+ARG JULIA="/root/.juliaup/bin/julia"
+COPY ./init.jl ${INIT_SCRIPT_DIR}
+RUN ${JULIA} ${INIT_SCRIPT_PATH} && \
+    rm ${INIT_SCRIPT_PATH}
 
-COPY ./init.jl /home/jovyan/init.jl
+# Clean up apt
+RUN apt autoremove -y && \
+    apt clean -y && \
+    rm -rf /var/lib/apt/lists/*
 
-USER jovyan
-
-RUN julia /home/jovyan/init.jl
+WORKDIR /workspaces/inulab_julia_devcontainer
