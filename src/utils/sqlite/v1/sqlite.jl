@@ -129,4 +129,130 @@ end
 
 export createMatrixTable, queryMatrixDataInsert, queryMatrixDataSelect, matrixDataExists
 
+# ID table operations
+
+idSchema = Tables.Schema(
+    [:id],
+    [String]
+)
+
+"""
+    createIDTable(db, tableName)
+
+Create an ID table with the given name in the database.
+"""
+function createIDTable(
+    db::SQLite.DB,
+    tableName::AbstractString
+)
+    SQLite.createtable!(db, tableName, idSchema)
+end
+
+"""
+    insertID(db, tableName, id)
+
+Insert an ID into the table.
+"""
+function insertID(
+    db::SQLite.DB,
+    tableName::AbstractString,
+    id::AbstractString
+)
+    DBInterface.execute(
+        db,
+        """
+        INSERT INTO $tableName (id)
+        VALUES (?)
+        """,
+        (id,)
+    )
+end
+
+"""
+    getAllIDs(db, tableName) -> Vector{String}
+
+Get all IDs from the table.
+"""
+function getAllIDs(
+    db::SQLite.DB,
+    tableName::AbstractString
+)::Vector{String}
+    df = DBInterface.execute(
+        db,
+        """
+        SELECT id FROM $tableName
+        """
+    ) |> DataFrame
+    return df.id
+end
+
+export createIDTable, insertID, getAllIDs
+
+# Bool table operations
+
+boolSchema = Tables.Schema(
+    [:id, :value],
+    [String, Bool]
+)
+
+"""
+    createBoolTable(db, tableName)
+
+Create a bool table with the given name in the database.
+"""
+function createBoolTable(
+    db::SQLite.DB,
+    tableName::AbstractString
+)
+    SQLite.createtable!(db, tableName, boolSchema)
+end
+
+"""
+    insertBool(db, tableName, id, value)
+
+Insert an ID and a Bool value into the table.
+"""
+function insertBool(
+    db::SQLite.DB,
+    tableName::AbstractString,
+    id::AbstractString,
+    value::Bool
+)
+    DBInterface.execute(
+        db,
+        """
+        INSERT INTO $tableName (id, value)
+        VALUES (?, ?)
+        """,
+        (id, value)
+    )
+end
+
+"""
+    getBool(db, tableName, id) -> Bool
+
+Get a Bool value from the table by ID.
+Throw an `ArgumentError` if the ID does not exist.
+"""
+function getBool(
+    db::SQLite.DB,
+    tableName::AbstractString,
+    id::AbstractString
+)::Bool
+    df = DBInterface.execute(
+        db,
+        """
+        SELECT value FROM $tableName
+        WHERE id = ?
+        """,
+        (id,)
+    ) |> DataFrame
+    if isempty(df)
+        throw(ArgumentError("No Bool value found for id: $id"))
+    end
+    return df.value[1]
+end
+
+export createBoolTable, insertBool, getBool
+
 end
